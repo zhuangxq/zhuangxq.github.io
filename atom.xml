@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   
-  <title><![CDATA[歪腰小强]]></title>
+  <title><![CDATA[小强的Blog]]></title>
   
   <link href="/atom.xml" rel="self"/>
   <link href="https://github.com/zhuangxq/zhuangxq.git//"/>
@@ -9,7 +9,7 @@
   <id>https://github.com/zhuangxq/zhuangxq.git//</id>
   
   <author>
-    <name><![CDATA[John Doe]]></name>
+    <name><![CDATA[歪腰小强]]></name>
     
   </author>
   
