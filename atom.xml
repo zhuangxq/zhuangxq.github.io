@@ -4,9 +4,9 @@
   <title><![CDATA[小强的Blog]]></title>
   
   <link href="/atom.xml" rel="self"/>
-  <link href="https://github.com/zhuangxq/zhuangxq.git//"/>
+  <link href="https://github.com/zhuangxq/zhuangxq.github.io.git//"/>
   <updated>2015-07-06T13:20:49.000Z</updated>
-  <id>https://github.com/zhuangxq/zhuangxq.git//</id>
+  <id>https://github.com/zhuangxq/zhuangxq.github.io.git//</id>
   
   <author>
     <name><![CDATA[歪腰小强]]></name>
@@ -17,8 +17,8 @@
   
   <entry>
     <title><![CDATA[Hello World]]></title>
-    <link href="https://github.com/zhuangxq/zhuangxq.git/2015/07/06/hello-world/"/>
-    <id>https://github.com/zhuangxq/zhuangxq.git/2015/07/06/hello-world/</id>
+    <link href="https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/06/hello-world/"/>
+    <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/06/hello-world/</id>
     <published>2015-07-06T13:20:49.000Z</published>
     <updated>2015-07-06T13:20:49.000Z</updated>
     <content type="html"><![CDATA[<p>Welcome to <a href="http://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="http://hexo.io/docs/" target="_blank" rel="external">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="http://hexo.io/docs/troubleshooting.html" target="_blank" rel="external">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
