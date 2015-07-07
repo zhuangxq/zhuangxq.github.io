@@ -5,7 +5,7 @@
   
   <link href="/atom.xml" rel="self"/>
   <link href="https://github.com/zhuangxq/zhuangxq.github.io.git//"/>
-  <updated>2015-07-06T13:20:49.000Z</updated>
+  <updated>2015-07-07T15:00:30.000Z</updated>
   <id>https://github.com/zhuangxq/zhuangxq.github.io.git//</id>
   
   <author>
@@ -14,6 +14,20 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title><![CDATA[开篇！]]></title>
+    <link href="https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/07/%E5%BC%80%E7%AF%87%EF%BC%81/"/>
+    <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/07/开篇！/</id>
+    <published>2015-07-07T13:37:17.000Z</published>
+    <updated>2015-07-07T15:00:30.000Z</updated>
+    <content type="html"><![CDATA[<h2 id="总算可以写上东西了。">总算可以写上东西了。</h2><p>   花了一个晚上部署，半个晚上换主题改七改八，hexo问题还是很多啊。不过想想hexo来自于学生之手，也是叼得不行啊。搭个blog好像十年前在玩QQ空间似的，好玩！感谢hexo作者，感谢yillia主题作者。这里就用来记录学习成长的点滴了（Markdown赶紧熟悉一下-。-）。玩的愉快~！</p>
+]]></content>
+    <summary type="html">
+    <![CDATA[<h2 id="总算可以写上东西了。">总算可以写上东西了。</h2><p>   花了一个晚上部署，半个晚上换主题改七改八，hexo问题还是很多啊。不过想想hexo来自于学生之手，也是叼得不行啊。搭个blog好像十年前在玩QQ空间似的，好玩！感谢hexo作者，感谢yillia主题]]>
+    </summary>
+    
+  </entry>
   
   <entry>
     <title><![CDATA[Hello World]]></title>
