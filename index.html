@@ -114,7 +114,7 @@
 				
 				<section class="switch-part switch-part2">
 					<div class="widget tagcloud" id="js-tagcloud">
-						<a href="/tags/iOS-设备启动时间/" style="font-size: 10px;">iOS 设备启动时间</a>
+						<a href="/tags/iOS/" style="font-size: 10px;">iOS</a> <a href="/tags/设备启动时间/" style="font-size: 10px;">设备启动时间</a>
 					</div>
 				</section>
 				
@@ -271,7 +271,6 @@ success = getifaddrs(&amp;addrs) == <span class="number">0</span>;
                 networkStatisc = (<span class="keyword">const</span> <span class="keyword">struct</span> if_data *) cursor-&gt;ifa_data;
                 changeTime = networkStatisc-&gt;ifi_lastchange;
                 <span class="built_in">NSDate</span> *restartTime = [<span class="built_in">NSDate</span> dateWithTimeIntervalSince1970:changeTime<span class="variable">.tv_sec</span>];
-
             }
             <span class="keyword">if</span> ([name hasPrefix:<span class="string">@"pdp_ip1"</span>])
             {
@@ -299,7 +298,8 @@ size_t size;
     newprocess = realloc(process, size);
 
     <span class="keyword">if</span> (!newprocess){
-        <span class="keyword">if</span> (process){
+       <span class="keyword">if</span> (process)
+        {
             free(process);
         }
         <span class="keyword">return</span> <span class="literal">nil</span>;
@@ -312,7 +312,7 @@ size_t size;
 <span class="keyword">if</span> (st == <span class="number">0</span>){
     <span class="keyword">if</span> (size % <span class="keyword">sizeof</span>(<span class="keyword">struct</span> kinfo_proc) == <span class="number">0</span>){
         <span class="keyword">int</span> nprocess = size / <span class="keyword">sizeof</span>(<span class="keyword">struct</span> kinfo_proc);
-        <span class="keyword">if</span> (nprocess){
+        <span class="keyword">if</span> (nprocess)            {
             <span class="built_in">NSMutableArray</span> * array = [[<span class="built_in">NSMutableArray</span> alloc] init];
             <span class="keyword">for</span> (<span class="keyword">int</span> i = nprocess - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--)
             {
@@ -321,7 +321,8 @@ size_t size;
                                                                  length:strlen(process[i]<span class="variable">.kp_proc</span><span class="variable">.p_comm</span>)
                                                                encoding:<span class="built_in">NSUTF8StringEncoding</span>];
 
-                <span class="keyword">if</span> ([processName isEqualToString:<span class="string">@"kernel_task"</span>]) {
+               <span class="keyword">if</span> ([processName isEqualToString:<span class="string">@"kernel_task"</span>]) 
+                {
                     <span class="built_in">NSTimeInterval</span> time = process[i]<span class="variable">.kp_proc</span><span class="variable">.p_un</span><span class="variable">.__p_starttime</span><span class="variable">.tv_sec</span>;
                     ;
                 }
@@ -341,7 +342,7 @@ size_t size;
       
       
 	<div class="article-tag tagcloud">
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/iOS-设备启动时间/">iOS 设备启动时间</a></li></ul>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/iOS/">iOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/设备启动时间/">设备启动时间</a></li></ul>
 	</div>
 
       

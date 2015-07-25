@@ -5,7 +5,7 @@
   
   <link href="/atom.xml" rel="self"/>
   <link href="https://github.com/zhuangxq/zhuangxq.github.io.git//"/>
-  <updated>2015-07-25T04:29:00.000Z</updated>
+  <updated>2015-07-25T05:43:53.000Z</updated>
   <id>https://github.com/zhuangxq/zhuangxq.github.io.git//</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/25/iOS%E8%AE%BE%E5%A4%87%E5%A6%82%E4%BD%95%E6%AD%A3%E7%A1%AE%E8%8E%B7%E5%8F%96%E8%AE%BE%E5%A4%87%E5%90%AF%E5%8A%A8%E6%97%B6%E9%97%B4%EF%BC%9F/"/>
     <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/25/iOS设备如何正确获取设备启动时间？/</id>
     <published>2015-07-25T02:17:13.000Z</published>
-    <updated>2015-07-25T04:29:00.000Z</updated>
+    <updated>2015-07-25T05:43:53.000Z</updated>
     <content type="html"><![CDATA[<h2 id="Overview">Overview</h2><p>前段时间产品功能需求需要用到设备启动时间。找了几种方法，几番周折算是找到满足了需求的方法。此篇记录一下如何正确姿势获取设备启动时间。方法4是满足我需求的设备启动时间，可直接前往。</p>
 <h3 id="方法1">方法1</h3><p>很容易找到这个方法：<code>[NSProcessInfo processInfo].systemUptime</code>。</p>
 <p>官方文档：<em>The time interval since the computer was restarted. (read-only)</em>,<br>设备重新启动后的连续运行时间。乍一看很好，搞定。其实这个接口根本就不准。用了这个接口，你会发现即使你没有重新启动，设备启动时间却一直有在变化。短时间内似乎都是对的，但是设备启动个几天就有问题了。具体原因不详。</p>
@@ -70,7 +70,6 @@ success = getifaddrs(&amp;addrs) == <span class="number">0</span>;
                 networkStatisc = (<span class="keyword">const</span> <span class="keyword">struct</span> if_data *) cursor-&gt;ifa_data;
                 changeTime = networkStatisc-&gt;ifi_lastchange;
                 <span class="built_in">NSDate</span> *restartTime = [<span class="built_in">NSDate</span> dateWithTimeIntervalSince1970:changeTime<span class="variable">.tv_sec</span>];
-
             }
             <span class="keyword">if</span> ([name hasPrefix:<span class="string">@"pdp_ip1"</span>])
             {
@@ -98,7 +97,8 @@ size_t size;
     newprocess = realloc(process, size);
 
     <span class="keyword">if</span> (!newprocess){
-        <span class="keyword">if</span> (process){
+       <span class="keyword">if</span> (process)
+        {
             free(process);
         }
         <span class="keyword">return</span> <span class="literal">nil</span>;
@@ -111,7 +111,7 @@ size_t size;
 <span class="keyword">if</span> (st == <span class="number">0</span>){
     <span class="keyword">if</span> (size % <span class="keyword">sizeof</span>(<span class="keyword">struct</span> kinfo_proc) == <span class="number">0</span>){
         <span class="keyword">int</span> nprocess = size / <span class="keyword">sizeof</span>(<span class="keyword">struct</span> kinfo_proc);
-        <span class="keyword">if</span> (nprocess){
+        <span class="keyword">if</span> (nprocess)            {
             <span class="built_in">NSMutableArray</span> * array = [[<span class="built_in">NSMutableArray</span> alloc] init];
             <span class="keyword">for</span> (<span class="keyword">int</span> i = nprocess - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--)
             {
@@ -120,7 +120,8 @@ size_t size;
                                                                  length:strlen(process[i]<span class="variable">.kp_proc</span><span class="variable">.p_comm</span>)
                                                                encoding:<span class="built_in">NSUTF8StringEncoding</span>];
 
-                <span class="keyword">if</span> ([processName isEqualToString:<span class="string">@"kernel_task"</span>]) {
+               <span class="keyword">if</span> ([processName isEqualToString:<span class="string">@"kernel_task"</span>]) 
+                {
                     <span class="built_in">NSTimeInterval</span> time = process[i]<span class="variable">.kp_proc</span><span class="variable">.p_un</span><span class="variable">.__p_starttime</span><span class="variable">.tv_sec</span>;
                     ;
                 }
@@ -138,7 +139,9 @@ size_t size;
 <h3 id="方法1"]]>
     </summary>
     
-      <category term="iOS 设备启动时间" scheme="https://github.com/zhuangxq/zhuangxq.github.io.git/tags/iOS-%E8%AE%BE%E5%A4%87%E5%90%AF%E5%8A%A8%E6%97%B6%E9%97%B4/"/>
+      <category term="iOS" scheme="https://github.com/zhuangxq/zhuangxq.github.io.git/tags/iOS/"/>
+    
+      <category term="设备启动时间" scheme="https://github.com/zhuangxq/zhuangxq.github.io.git/tags/%E8%AE%BE%E5%A4%87%E5%90%AF%E5%8A%A8%E6%97%B6%E9%97%B4/"/>
     
   </entry>
   
