@@ -5,7 +5,7 @@
   
   <link href="/atom.xml" rel="self"/>
   <link href="https://github.com/zhuangxq/zhuangxq.github.io.git//"/>
-  <updated>2015-07-07T15:00:30.000Z</updated>
+  <updated>2015-07-25T04:29:00.000Z</updated>
   <id>https://github.com/zhuangxq/zhuangxq.github.io.git//</id>
   
   <author>
@@ -16,11 +16,138 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title><![CDATA[iOS设备如何正确获取设备启动时间？]]></title>
+    <link href="https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/25/iOS%E8%AE%BE%E5%A4%87%E5%A6%82%E4%BD%95%E6%AD%A3%E7%A1%AE%E8%8E%B7%E5%8F%96%E8%AE%BE%E5%A4%87%E5%90%AF%E5%8A%A8%E6%97%B6%E9%97%B4%EF%BC%9F/"/>
+    <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/25/iOS设备如何正确获取设备启动时间？/</id>
+    <published>2015-07-25T02:17:13.000Z</published>
+    <updated>2015-07-25T04:29:00.000Z</updated>
+    <content type="html"><![CDATA[<h2 id="Overview">Overview</h2><p>前段时间产品功能需求需要用到设备启动时间。找了几种方法，几番周折算是找到满足了需求的方法。此篇记录一下如何正确姿势获取设备启动时间。方法4是满足我需求的设备启动时间，可直接前往。</p>
+<h3 id="方法1">方法1</h3><p>很容易找到这个方法：<code>[NSProcessInfo processInfo].systemUptime</code>。</p>
+<p>官方文档：<em>The time interval since the computer was restarted. (read-only)</em>,<br>设备重新启动后的连续运行时间。乍一看很好，搞定。其实这个接口根本就不准。用了这个接口，你会发现即使你没有重新启动，设备启动时间却一直有在变化。短时间内似乎都是对的，但是设备启动个几天就有问题了。具体原因不详。</p>
+<h3 id="方法2">方法2</h3><pre><code><span class="preprocessor">#<span class="keyword">include</span> &lt;sys/types.h&gt;</span>
+<span class="preprocessor">#<span class="keyword">include</span> &lt;sys/sysctl.h&gt; </span>
+<span class="preprocessor">#<span class="keyword">define</span> MIB_SIZE 2  </span>
+
+<span class="keyword">int</span> mib[MIB_SIZE];
+<span class="keyword">size_t</span> size;
+<span class="keyword">struct</span> timeval  boottime;
+
+mib[<span class="number">0</span>] = CTL_KERN;
+mib[<span class="number">1</span>] = KERN_BOOTTIME;
+size = <span class="keyword">sizeof</span>(boottime);
+<span class="keyword">if</span> (sysctl(mib, MIB_SIZE, &amp;boottime, &amp;size, NULL, <span class="number">0</span>) != -<span class="number">1</span>)
+{
+    <span class="comment">// successful call</span>
+    NSDate* bootDate = [NSDate dateWithTimeIntervalSince1970:boottime.tv_sec];
+}
+</code></pre><p>上面代码来自<a href="http://stackoverflow.com/questions/10331020/get-the-boot-time-in-objective-c" target="_blank" rel="external">这里</a>。关键代码主要是sysctl，用来获取或设置内核状态的函数。sysctl及更多内核状态信息<a href="https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man8/sysctl.8.html" target="_blank" rel="external">戳这里</a>。上面代码就是直接读取内核状态中的设备启动时间。KERN_BOOTTIME点击进去头文件是这样描述的：/<em> struct: time kernel was booted </em>/。内核启动时间，这总靠谱了吧。经验证，这个时间是靠谱的。但是有个问题，如果改了设备时间，这个重启时间居然也跟着变…可见，这个参数的返回值是根据当前设备时间计算来的。一些需要准确判断重启时间的逻辑，显然在改变设备时间的状况下就有问题了。所以，不满足要求…</p>
+<h3 id="方法3">方法3</h3><pre><code><span class="preprocessor">#include <span class="title">&lt;arpa/inet.h&gt;</span></span>
+<span class="preprocessor">#include <span class="title">&lt;net/if.h&gt;</span></span>
+<span class="preprocessor">#include <span class="title">&lt;ifaddrs.h&gt;</span></span>
+<span class="preprocessor">#include <span class="title">&lt;net/if_dl.h&gt;</span></span>
+
+
+<span class="built_in">BOOL</span>   success;
+<span class="keyword">struct</span> ifaddrs *addrs;
+<span class="keyword">const</span> <span class="keyword">struct</span> ifaddrs *cursor;
+<span class="keyword">const</span> <span class="keyword">struct</span> if_data *networkStatisc;
+
+<span class="built_in">NSString</span> *name=[[<span class="built_in">NSString</span> alloc]init];
+
+<span class="keyword">struct</span> IF_DATA_TIMEVAL changeTime ;
+
+success = getifaddrs(&amp;addrs) == <span class="number">0</span>;
+<span class="keyword">if</span> (success)
+{
+    cursor = addrs;
+    <span class="keyword">while</span> (cursor != <span class="literal">NULL</span>)
+    {
+        name=[<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%s"</span>,cursor-&gt;ifa_name];
+        <span class="keyword">if</span> (cursor-&gt;ifa_addr-&gt;sa_family == AF_LINK)
+        {
+            <span class="keyword">if</span> ([name hasPrefix:<span class="string">@"en1"</span>])
+            {
+                networkStatisc = (<span class="keyword">const</span> <span class="keyword">struct</span> if_data *) cursor-&gt;ifa_data;
+                changeTime = networkStatisc-&gt;ifi_lastchange;
+                <span class="built_in">NSDate</span> *restartTime = [<span class="built_in">NSDate</span> dateWithTimeIntervalSince1970:changeTime<span class="variable">.tv_sec</span>];
+
+            }
+            <span class="keyword">if</span> ([name hasPrefix:<span class="string">@"pdp_ip1"</span>])
+            {
+                networkStatisc = (<span class="keyword">const</span> <span class="keyword">struct</span> if_data *) cursor-&gt;ifa_data;
+                changeTime = networkStatisc-&gt;ifi_lastchange;
+                <span class="built_in">NSDate</span> *restartTime = [<span class="built_in">NSDate</span> dateWithTimeIntervalSince1970:changeTime<span class="variable">.tv_sec</span>];
+            }
+        }
+        cursor = cursor-&gt;ifa_next;
+    }
+    freeifaddrs(addrs);
+}
+</code></pre><p>上面代码是获取网络接口流量改变时间。 en开头的是WiFi网口，pdp_ip开头的是移动流量网口。有用到的是en0,和pdp_ip0,其他都是没用的（其实是不知道它什么时候会用到…）。设备重启会重置网络接口的数据，ifi_lastchange就会更新为重启的时间。对于en1、pdp_ip1就只在设备重启的时候改变，就可以作为设备重启时间。可惜的是，存在与方法2同样的问题，所以，不满足需求…</p>
+<h3 id="方法4">方法4</h3><pre><code><span class="keyword">int</span> mib[<span class="number">4</span>] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, <span class="number">0</span>};
+size_t miblen = <span class="number">4</span>;
+
+size_t size;
+<span class="keyword">int</span> st = sysctl(mib, miblen, <span class="literal">NULL</span>, &amp;size, <span class="literal">NULL</span>, <span class="number">0</span>);
+
+<span class="keyword">struct</span> kinfo_proc * process = <span class="literal">NULL</span>;
+<span class="keyword">struct</span> kinfo_proc * newprocess = <span class="literal">NULL</span>;
+
+<span class="keyword">do</span> {
+    size += size / <span class="number">10</span>;
+    newprocess = realloc(process, size);
+
+    <span class="keyword">if</span> (!newprocess){
+        <span class="keyword">if</span> (process){
+            free(process);
+        }
+        <span class="keyword">return</span> <span class="literal">nil</span>;
+    }
+
+    process = newprocess;
+    st = sysctl(mib, miblen, process, &amp;size, <span class="literal">NULL</span>, <span class="number">0</span>);
+} <span class="keyword">while</span> (st == -<span class="number">1</span> &amp;&amp; errno == ENOMEM);
+
+<span class="keyword">if</span> (st == <span class="number">0</span>){
+    <span class="keyword">if</span> (size % <span class="keyword">sizeof</span>(<span class="keyword">struct</span> kinfo_proc) == <span class="number">0</span>){
+        <span class="keyword">int</span> nprocess = size / <span class="keyword">sizeof</span>(<span class="keyword">struct</span> kinfo_proc);
+        <span class="keyword">if</span> (nprocess){
+            <span class="built_in">NSMutableArray</span> * array = [[<span class="built_in">NSMutableArray</span> alloc] init];
+            <span class="keyword">for</span> (<span class="keyword">int</span> i = nprocess - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--)
+            {
+                <span class="built_in">NSString</span> * processID = [[<span class="built_in">NSString</span> alloc] initWithFormat:<span class="string">@"%d"</span>, process[i]<span class="variable">.kp_proc</span><span class="variable">.p_pid</span>];
+                <span class="built_in">NSString</span> * processName = [[<span class="built_in">NSString</span> alloc]initWithBytes:(<span class="keyword">const</span> <span class="keyword">void</span> *)process[i]<span class="variable">.kp_proc</span><span class="variable">.p_comm</span>
+                                                                 length:strlen(process[i]<span class="variable">.kp_proc</span><span class="variable">.p_comm</span>)
+                                                               encoding:<span class="built_in">NSUTF8StringEncoding</span>];
+
+                <span class="keyword">if</span> ([processName isEqualToString:<span class="string">@"kernel_task"</span>]) {
+                    <span class="built_in">NSTimeInterval</span> time = process[i]<span class="variable">.kp_proc</span><span class="variable">.p_un</span><span class="variable">.__p_starttime</span><span class="variable">.tv_sec</span>;
+                    ;
+                }
+            }
+
+            free(process);
+            <span class="keyword">return</span> array;
+        }
+    }
+}    
+</code></pre><p>上面代码做俩个事：1、获取正在运行进程列表。2、找到kernel_task进程，kernel_task进程的启动时间就可作为设备重启的时间。经测试，没有方法2、3的问题。满足要求。</p>
+]]></content>
+    <summary type="html">
+    <![CDATA[<h2 id="Overview">Overview</h2><p>前段时间产品功能需求需要用到设备启动时间。找了几种方法，几番周折算是找到满足了需求的方法。此篇记录一下如何正确姿势获取设备启动时间。方法4是满足我需求的设备启动时间，可直接前往。</p>
+<h3 id="方法1"]]>
+    </summary>
+    
+      <category term="iOS 设备启动时间" scheme="https://github.com/zhuangxq/zhuangxq.github.io.git/tags/iOS-%E8%AE%BE%E5%A4%87%E5%90%AF%E5%8A%A8%E6%97%B6%E9%97%B4/"/>
+    
+  </entry>
+  
+  <entry>
     <title><![CDATA[开篇！]]></title>
     <link href="https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/07/%E5%BC%80%E7%AF%87%EF%BC%81/"/>
     <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/07/开篇！/</id>
     <published>2015-07-07T13:37:17.000Z</published>
-    <updated>2015-07-07T15:00:30.000Z</updated>
+    <updated>2015-07-07T15:01:14.000Z</updated>
     <content type="html"><![CDATA[<h2 id="总算可以写上东西了。">总算可以写上东西了。</h2><p>   花了一个晚上部署，半个晚上换主题改七改八，hexo问题还是很多啊。不过想想hexo来自于学生之手，也是叼得不行啊。搭个blog好像十年前在玩QQ空间似的，好玩！感谢hexo作者，感谢yillia主题作者。这里就用来记录学习成长的点滴了（Markdown赶紧熟悉一下-。-）。玩的愉快~！</p>
 ]]></content>
     <summary type="html">
