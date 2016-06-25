@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   
-  <title>摇嘞摇嘞iOS</title>
+  <title>摇嘞摇嘞iOS技术博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description">
+  <meta name="description" content="苍狗又白云，我的身旁还是只有你，代码。">
 <meta property="og:type" content="website">
-<meta property="og:title" content="摇嘞摇嘞iOS">
+<meta property="og:title" content="摇嘞摇嘞iOS技术博客">
 <meta property="og:url" content="https://github.com/zhuangxq/zhuangxq.github.io.git/index.html">
-<meta property="og:site_name" content="摇嘞摇嘞iOS">
-<meta property="og:description">
+<meta property="og:site_name" content="摇嘞摇嘞iOS技术博客">
+<meta property="og:description" content="苍狗又白云，我的身旁还是只有你，代码。">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="摇嘞摇嘞iOS">
-<meta name="twitter:description">
+<meta name="twitter:title" content="摇嘞摇嘞iOS技术博客">
+<meta name="twitter:description" content="苍狗又白云，我的身旁还是只有你，代码。">
   
-    <link rel="alternative" href="/atom.xml" title="摇嘞摇嘞iOS" type="application/atom+xml">
+    <link rel="alternative" href="/atom.xml" title="摇嘞摇嘞iOS技术博客" type="application/atom+xml">
   
   
     <link rel="icon" href="/favicon.png">
@@ -47,7 +47,7 @@ var _hmt = _hmt || [];
 		</a>
 
 		<hgroup>
-		  <h1 class="header-author"><a href="/">歪腰小强</a></h1>
+		  <h1 class="header-author"><a href="/">waiyao</a></h1>
 		</hgroup>
 
 		
@@ -161,7 +161,7 @@ var _hmt = _hmt || [];
       <nav id="mobile-nav">
   	<div class="overlay">
   		<div class="slider-trigger"></div>
-  		<h1 class="header-author js-mobile-header hide">歪腰小强</h1>
+  		<h1 class="header-author js-mobile-header hide">waiyao</h1>
   	</div>
 	<div class="intrude-less">
 		<header id="header" class="inner">
@@ -169,7 +169,7 @@ var _hmt = _hmt || [];
 				<img lazy-src="img/avatar.jpg" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author">歪腰小强</h1>
+			  <h1 class="header-author">waiyao</h1>
 			</hgroup>
 			
 			<nav class="header-menu">
@@ -195,6 +195,131 @@ var _hmt = _hmt || [];
 	</div>
 </nav>
       <div class="body-wrap">
+  
+    <article id="post-AFNetworking源码阅读笔记之一" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2016/06/25/AFNetworking源码阅读笔记之一/" class="article-date">
+  	<time datetime="2016-06-25T02:03:40.000Z" itemprop="datePublished">2016-06-25</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/06/25/AFNetworking源码阅读笔记之一/">AFNetworking源码阅读笔记之一</a>
+    </h1>
+  
+
+      </header>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>学习<a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a>前，最好先了解下<a href="http://objccn.io/issue-5-4/" target="_blank" rel="external">NSURLSession</a>。本文先介绍一下AFNetworking如何工作，整体结构是怎样的。先看架构图：</p>
+<p><img src="../images/AFSummary.png" alt=""></p>
+<p>AFURLSessionManager为核心类，类似于MVC中的controller，负责组织起整个工作流程，这里它要管的有AFHTTPRequestSerializer请求的生成，AFHTTPResponseSerializer响应处理的生成，NSURLSession的管理，请求task的各种各样回调处理，AFSecurityPolicy安全策略配置、缓存策略配置等。下面通过一个普通GET请求函数调用栈，了解下整套流程，分三部分：请求前、请求中、请求后。</p>
+<p>请求前(in main queue)：</p>
+<pre><code>[AFHTTPSessionManager <span class="string">GET:</span><span class="string">parameters:</span><span class="string">progress:</span><span class="string">success:</span><span class="string">failure:</span>]
+  [AFHTTPSessionManager <span class="string">dataTaskWithHTTPMethod:</span><span class="string">URLString:</span><span class="string">parameters:</span><span class="string">uploadProgress:</span><span class="string">downloadProgress:</span><span class="string">success:</span><span class="string">failure:</span>]
+    [AFHTTPRequestSerializer <span class="string">requestWithMethod:</span><span class="string">URLString:</span><span class="string">parameters:</span><span class="string">error:</span>]   #<span class="number">1</span>
+    [AFHTTPRequestSerializer <span class="string">requestBySerializingRequest:</span><span class="string">withParameters:</span><span class="string">error:</span>] #<span class="number">1</span>
+    [AFURLSessionManager <span class="string">dataTaskWithRequest:</span><span class="string">uploadProgress:</span><span class="string">downloadProgress:</span><span class="string">completionHandler:</span>]  #<span class="number">2</span>
+        [AFURLSessionManager <span class="string">addDelegateForDataTask:</span><span class="string">uploadProgress:</span><span class="string">downloadProgress:</span><span class="string">completionHandler:</span>]  
+        [AFURLSessionManager <span class="string">setDelegate:</span><span class="string">forTask:</span>]
+        [AFURLSessionManager <span class="string">addNotificationObserverForTask:</span>]
+  [task resume]  #<span class="number">3</span>
+</code></pre><p>AFHTTPSessionManager是AFURLSessionManager的子类，提供更方便的接口。#1是根据URL、请求参数生成NSMutableURLRequest，生成工作由AFHTTPRequestSerializer来做。#2就是创建NSURLSessionDataTask，同时也做了一些代理添加设置(代理、回调block管理下面讲)。#3[task resume]请求正式开始。</p>
+<p>请求中(not in main thread)：</p>
+<pre><code>[AFURLSessionManager <span class="string">URLSession:</span><span class="string">didReceiveChallenge:</span><span class="string">completionHandler:</span>] #<span class="number">1</span>
+    [AFSecurityPolicy <span class="string">evaluateServerTrust:</span><span class="string">forDomain:</span>] #<span class="number">1</span>
+        AFServerTrustIsValid  #<span class="number">1</span>
+
+[AFURLSessionManager <span class="string">URLSession:</span><span class="string">dataTask:</span><span class="string">didReceiveData:</span>] #<span class="number">2</span>
+    [AFURLSessionManagerTaskDelegate <span class="string">URLSession:</span><span class="string">dataTask:</span><span class="string">didReceiveData:</span>] #<span class="number">3</span>
+
+[AFURLSessionManager <span class="string">URLSession:</span><span class="string">task:</span><span class="string">didCompleteWithError:</span>] #<span class="number">4</span>
+[AFURLSessionManagerTaskDelegate <span class="string">URLSession:</span><span class="string">task:</span><span class="string">didCompleteWithError:</span>] #<span class="number">4</span>
+[AFURLSessionManager <span class="string">removeDelegateForTask:</span>]
+</code></pre><p>第一个小部分#1是https的证书校验(明年肯定是都要https了…),这部分内容准备另外写一篇。#2就是数据接收。#3的AFURLSessionManagerTaskDelegate是代理管理的一个类，下面单独讲。 #4数据接收完成，请求结束，有错误就响应错误，没错误就去处理数据。</p>
+<p>请求后(in queue: com.alamofire.networking.session.manager.processing)：</p>
+<pre><code>[AFJSONResponseSerializer <span class="string">responseObjectForResponse:</span><span class="string">data:</span><span class="string">error:</span>]
+    [AFHTTPResponseSerializer <span class="string">validateResponse:</span><span class="string">data:</span><span class="string">error:</span>]
+</code></pre><p>请求后这俩就是数据的校验和数据的处理。AFJSONResponseSerializer继承自AFHTTPResponseSerializer,处理JSON数据。数据处理完，回主线程，success(failure) block回调。流程结束。</p>
+<p>下面看下上面提到的AFURLSessionManagerTaskDelegate，代理回调、block都是怎么处理的？请求前#2有个addDelegate函数：</p>
+<pre><code>- (<span class="keyword">void</span>)addDelegateForDataTask:(<span class="built_in">NSURLSessionDataTask</span> *)dataTask
+                uploadProgress:(nullable <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *uploadProgress)) uploadProgressBlock
+              downloadProgress:(nullable <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *downloadProgress)) downloadProgressBlock
+             completionHandler:(<span class="keyword">void</span> (^)(<span class="built_in">NSURLResponse</span> *response, <span class="keyword">id</span> responseObject, <span class="built_in">NSError</span> *error))completionHandler
+{
+    <span class="comment">//创建代理管理对象，并将三个block交给这个对象。</span>
+    AFURLSessionManagerTaskDelegate *delegate = [[AFURLSessionManagerTaskDelegate alloc] init];
+    delegate<span class="variable">.manager</span> = <span class="keyword">self</span>;    <span class="comment">//持有AFURLSessionManager</span>
+    delegate<span class="variable">.completionHandler</span> = completionHandler;
+
+    dataTask<span class="variable">.taskDescription</span> = <span class="keyword">self</span><span class="variable">.taskDescriptionForSessionTasks</span>;
+    [<span class="keyword">self</span> setDelegate:delegate forTask:dataTask];
+
+    delegate<span class="variable">.uploadProgressBlock</span> = uploadProgressBlock;
+    delegate<span class="variable">.downloadProgressBlock</span> = downloadProgressBlock;
+}
+
+- (<span class="keyword">void</span>)setDelegate:(AFURLSessionManagerTaskDelegate *)delegate
+            forTask:(<span class="built_in">NSURLSessionTask</span> *)task
+{
+    <span class="built_in">NSParameterAssert</span>(task);
+    <span class="built_in">NSParameterAssert</span>(delegate);
+
+    [<span class="keyword">self</span><span class="variable">.lock</span> lock];
+    <span class="comment">//task和delegate manager以键值对方式存在这个字典。</span>
+    <span class="keyword">self</span><span class="variable">.mutableTaskDelegatesKeyedByTaskIdentifier</span>[@(task<span class="variable">.taskIdentifier</span>)] = delegate;
+    [delegate setupProgressForTask:task];    <span class="comment">//进度回调设置，用KVO观察task的几个进度值。</span>
+    [<span class="keyword">self</span> addNotificationObserverForTask:task];
+    [<span class="keyword">self</span><span class="variable">.lock</span> unlock];
+}
+</code></pre><p>从上面代码可以看出，AFURLSessionManager的进度回调和完成completionHandle都是交给了这个代理管理类。再看下这个类的@interface。</p>
+<pre><code><span class="class"><span class="keyword">@interface</span> <span class="title">AFURLSessionManagerTaskDelegate</span> : <span class="title">NSObject</span> &lt;<span class="title">NSURLSessionTaskDelegate</span>, <span class="title">NSURLSessionDataDelegate</span>, <span class="title">NSURLSessionDownloadDelegate</span>&gt;</span>
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">weak</span>) AFURLSessionManager *manager;
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSMutableData</span> *mutableData;
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSProgress</span> *uploadProgress;
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSProgress</span> *downloadProgress;
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) <span class="built_in">NSURL</span> *downloadFileURL;
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) AFURLSessionDownloadTaskDidFinishDownloadingBlock downloadTaskDidFinishDownloading;
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) AFURLSessionTaskProgressBlock uploadProgressBlock;
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) AFURLSessionTaskProgressBlock downloadProgressBlock;
+<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) AFURLSessionTaskCompletionHandler completionHandler;
+<span class="keyword">@end</span>
+</code></pre><p>可见主要的回调数据都交给了这个类，包括回调data，下载的fileURL。这个类实现了三个协议的三个方法，分别是数据接收didReceiveData，请求完成didCompleteWithError， 下载完成didFinishDownloadingToURL。所以这个类接管了进度和完成回调，处理了回调数据，最后完成block也在此。这里三个协议方法，仅仅就是提供三个方法而已,NSURLSession相关的代理并不是直接回调这三函数，这三函数是在AFURLSessionManager中的代理中调用。换句话，这三方法你随便换个名字也没啥问题，就是个普通方法。这里容易混淆。</p>
+<p>另外，这里为什么要把进度、回调数据、数据处理这块单独拆出来？个人瞎以为：这样类的职能更清晰，AFURLSessionManager就是做网络请求的事，请求进度管理、请求回来的后事就是交给AFURLSessionManagerTaskDelegate，拆开的一个好处就是可拓展性增强，想要替换或者增加一个后事处理类型就比较容易了。不过也想不出这里还需要扩展出什么东西，或者也仅仅只是想做个代码拆分而已。</p>
+
+      
+    </div>
+    
+    <div class="article-info article-info-index">
+      
+      
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+    
+  </div>
+  
+</article>
+
+
+
+
+
+
+
   
     <article id="post-Masonry学习" class="article article-type-post" itemscope itemprop="blogPost">
   
@@ -688,7 +813,7 @@ size_t size;
   <div class="outer">
     <div id="footer-info">
     	<div class="footer-left">
-    		&copy; 2016 歪腰小强
+    		&copy; 2016 waiyao
     	</div>
               本站总访问量<span id="busuanzi_value_site_pv"></span>次
               本站访客数<span id="busuanzi_value_site_uv"></span>人次
