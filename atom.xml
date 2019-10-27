@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   
-  <title><![CDATA[摇嘞摇嘞iOS技术博客]]></title>
+  <title><![CDATA[Johngo Blog]]></title>
   
   <link href="/atom.xml" rel="self"/>
   <link href="https://github.com/zhuangxq/zhuangxq.github.io.git//"/>
-  <updated>2016-07-06T15:56:12.000Z</updated>
+  <updated>2019-10-27T06:02:29.386Z</updated>
   <id>https://github.com/zhuangxq/zhuangxq.github.io.git//</id>
   
   <author>
-    <name><![CDATA[waiyao]]></name>
+    <name><![CDATA[Johngo]]></name>
     
   </author>
   
@@ -20,7 +20,7 @@
     <link href="https://github.com/zhuangxq/zhuangxq.github.io.git/2016/07/02/AFNetworking%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%E4%B9%8B%E4%BA%8C-AFURLRequestSerialization-AFURLResponseSerialization/"/>
     <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2016/07/02/AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization/</id>
     <published>2016-07-02T07:56:23.000Z</published>
-    <updated>2016-07-06T15:56:12.000Z</updated>
+    <updated>2019-10-27T06:02:29.386Z</updated>
     <content type="html"><![CDATA[<p>继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。</p>
 <h2 id="AFHTTPRequestSerializer">AFHTTPRequestSerializer</h2><p>AFHTTPRequestSerializer是生成NSURLRequest核心类。它有两个子类AFJSONRequestSerializer、AFPropertyListRequestSerializer，分别对应不同的参数生成方式。生成request方法：</p>
 <pre><code>- (<span class="type">NSMutableURLRequest</span> *)requestWithMethod:(<span class="type">NSString</span> *)<span class="keyword">method</span>
@@ -116,10 +116,10 @@
     NSLog(@<span class="string">"failed:%@"</span>, error);
 }];
 </code></pre><p>这个与正常的请求相比多了constructingBodyWithBlock，这个block就是用来添加分块数据。再看看这个请求，最终的HTTP请求长什么样。</p>
-<p><img src="../images/af_multipart_2.png" alt=""><br><img src="../images/af_multipart_3.png" alt=""></p>
-<p>看请求头的Content-Type:multipart/form-data; boundary=Boundary+7C0ABF26A3C30CEB。这是分块上传必须有的一个header，告诉响应方当前是分块数据，且分割线为Boundary+7C0ABF26A3C30CEB，响应方据此处理。由于分割线肯定不能跟数据块有一样的情况，所以分割线一般是一个随机复杂较长的值。接着看请求体，去掉分割线，就剩下三段数据，每段数据由Content-Disposition、空行、数据组成，<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html" target="_blank" rel="external">Content-Disposition</a>官方释义：The Content-Disposition response-header field has been proposed as a means for the origin server to suggest a default filename if the user requests that the content is saved to a file. 就是如果这块数据是要被保存成文件，那么Content-Disposition这个header就可以提供默认名。可以知道，其实分块数据请求其实就是POST请求，只不过在请求体数据做文章而已。下面的内容，都是围绕如何生成这个最终的请求体数据在做文章。</p>
+<p><img src="/images/af_multipart_2.png" alt><br><img src="/images/af_multipart_3.png" alt></p>
+<p>看请求头的Content-Type:multipart/form-data; boundary=Boundary+7C0ABF26A3C30CEB。这是分块上传必须有的一个header，告诉响应方当前是分块数据，且分割线为Boundary+7C0ABF26A3C30CEB，响应方据此处理。由于分割线肯定不能跟数据块有一样的情况，所以分割线一般是一个随机复杂较长的值。接着看请求体，去掉分割线，就剩下三段数据，每段数据由Content-Disposition、空行、数据组成，<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html" target="_blank" rel="noopener">Content-Disposition</a>官方释义：The Content-Disposition response-header field has been proposed as a means for the origin server to suggest a default filename if the user requests that the content is saved to a file. 就是如果这块数据是要被保存成文件，那么Content-Disposition这个header就可以提供默认名。可以知道，其实分块数据请求其实就是POST请求，只不过在请求体数据做文章而已。下面的内容，都是围绕如何生成这个最终的请求体数据在做文章。</p>
 <p>看相关的几个类：</p>
-<p><img src="../images/afnet_multipart.png" alt=""></p>
+<p><img src="/images/afnet_multipart.png" alt></p>
 <p>AFStreamingMultipart总管分块数据的生成模块，AFMultipartBodyStream是一个数据流，AFHTTPBodyPart是具体的每个数据块的内容。AFMultipartFormData提供各种各样数据(string,data,file,stream…)的添加接口。下面看muiltipart请求如何生成(省略非关键代码):</p>
 <pre><code>- (<span class="type">NSMutableURLRequest</span> *)multipartFormRequestWithMethod:(<span class="type">NSString</span> *)<span class="keyword">method</span>
                                               <span class="type">URLString</span>:(<span class="type">NSString</span> *)<span class="type">URLString</span>
@@ -190,7 +190,7 @@
 
     return <span class="literal">self</span>.request;
 }
-</code></pre><p>这里主要关心[self.request setHTTPBodyStream:self.bodyStream]， 其他代码好懂。这个设置后，HTTPBody请被置空，这个流的完整数据将被作为请求体。这个流需要是还没打开的，request会接管这个流，请求时候会打开，不用我们调流的open。关于流可以补一下<a href="http://southpeak.github.io/blog/2014/07/17/ioszhong-liu-stream-de-shi-yong/" target="_blank" rel="external">这篇</a>，stackoverflow看到个比较一针见血的描述：The thing you need to understand about NSStreams, is “don’t call us, we’ll call you.” When the stream has data available, it will notify its delegate, and then you read whatever data is available and tell it to go get some more. 然而也有主动call you的情况，AFHTTPBodyPart就是这样干的。</p>
+</code></pre><p>这里主要关心[self.request setHTTPBodyStream:self.bodyStream]， 其他代码好懂。这个设置后，HTTPBody请被置空，这个流的完整数据将被作为请求体。这个流需要是还没打开的，request会接管这个流，请求时候会打开，不用我们调流的open。关于流可以补一下<a href="http://southpeak.github.io/blog/2014/07/17/ioszhong-liu-stream-de-shi-yong/" target="_blank" rel="noopener">这篇</a>，stackoverflow看到个比较一针见血的描述：The thing you need to understand about NSStreams, is “don’t call us, we’ll call you.” When the stream has data available, it will notify its delegate, and then you read whatever data is available and tell it to go get some more. 然而也有主动call you的情况，AFHTTPBodyPart就是这样干的。</p>
 <p>下面看流是如何读的，下面是AFMultipartBodyStream的代理方法：</p>
 <pre><code>- (<span class="built_in">NSInteger</span>)read:(uint8_t *)buffer
         maxLength:(<span class="built_in">NSUInteger</span>)length
@@ -263,7 +263,7 @@
 }
 </code></pre><p>以上就是分块数据上传的内容。读完源码，发现然而从来没用过这个功能- -。避免知识用到方恨少时，看看也是值得的。</p>
 <h2 id="AFURLResponseSerialization">AFURLResponseSerialization</h2><p>请求的响应则单纯的多，比较简单，无非就是状态判断，MIME判断，不同类型数据的处理。</p>
-<p><img src="../images/af_response.png" alt=""></p>
+<p><img src="/images/af_response.png" alt></p>
 <p>基类AFHTTPResponseSerializer实现数据是否有效的校验，数据不做处理，原样返回data。几个子类则有对应的数据处理方法，值得一提的是JSON数据有帮我们做了一些空字段处理。</p>
 ]]></content>
     <summary type="html">
@@ -278,9 +278,9 @@
     <link href="https://github.com/zhuangxq/zhuangxq.github.io.git/2016/06/25/AFNetworking%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0%E4%B9%8B%E4%B8%80/"/>
     <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2016/06/25/AFNetworking源码阅读笔记之一/</id>
     <published>2016-06-25T02:03:40.000Z</published>
-    <updated>2016-06-25T06:13:55.000Z</updated>
-    <content type="html"><![CDATA[<p>学习<a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a>前，最好先了解下<a href="http://objccn.io/issue-5-4/" target="_blank" rel="external">NSURLSession</a>。本文先介绍一下AFNetworking如何工作，整体结构是怎样的。先看架构图：</p>
-<p><img src="../images/AFSummary.png" alt=""></p>
+    <updated>2019-10-27T06:03:36.140Z</updated>
+    <content type="html"><![CDATA[<p>学习<a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a>前，最好先了解下<a href="http://objccn.io/issue-5-4/" target="_blank" rel="noopener">NSURLSession</a>。本文先介绍一下AFNetworking如何工作，整体结构是怎样的。先看架构图：</p>
+<p><img src="/images/AFSummary.png" alt></p>
 <p>AFURLSessionManager为核心类，类似于MVC中的controller，负责组织起整个工作流程，这里它要管的有AFHTTPRequestSerializer请求的生成，AFHTTPResponseSerializer响应处理的生成，NSURLSession的管理，请求task的各种各样回调处理，AFSecurityPolicy安全策略配置、缓存策略配置等。下面通过一个普通GET请求函数调用栈，了解下整套流程，分三部分：请求前、请求中、请求后。</p>
 <p>请求前(in main queue)：</p>
 <pre><code>[AFHTTPSessionManager <span class="string">GET:</span><span class="string">parameters:</span><span class="string">progress:</span><span class="string">success:</span><span class="string">failure:</span>]
@@ -368,14 +368,14 @@
     <link href="https://github.com/zhuangxq/zhuangxq.github.io.git/2016/03/24/Masonry%E5%AD%A6%E4%B9%A0/"/>
     <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2016/03/24/Masonry学习/</id>
     <published>2016-03-24T12:33:49.000Z</published>
-    <updated>2016-03-24T16:41:31.000Z</updated>
+    <updated>2019-10-27T06:04:46.263Z</updated>
     <content type="html"><![CDATA[<h2 id="Overview">Overview</h2><p>Masonry已经是离不开的开发库了，所有布局都用它，记录一下<a href="https://github.com/SnapKit/Masonry">Masonary</a>的源码学习。带着几个问题开始。</p>
 <ul>
 <li>Masonry是如何工作的？</li>
 <li>链式调用的语法是如何实现的？</li>
 <li>使用注意项？</li>
 </ul>
-<h3 id="工作流程">工作流程</h3><p>Masonry目录，红框内为主要类。<br><img src="../images/masonry_1.png" alt=""></p>
+<h3 id="工作流程">工作流程</h3><p>Masonry目录，红框内为主要类。<br><img src="/images/masonry_1.png" alt></p>
 <p>MASConstraints:核心类，可以表示NSLayoutConstraint的信息，可以是一个或一组约束。分别对应两个子类MASViewConstraints，MASCompositeConstraint。链式调用的实现也来自这个类。下文分析。</p>
 <p>MASViewConstraints:MASConstraints子类，包含一个约束的相关信息，first/second MASViewAttribute, layoutRelation。提供安装、卸载约束的方法。下文“约束”都指MASViewConstraints。</p>
 <p>MASCompositeConstraint:MASConstraints子类，包含多个MASViewConstraints。下文称之为”约束集”。</p>
@@ -524,17 +524,16 @@
 }
 </code></pre><p>更新过程：给个标志updateExisting，YES为需要更新，需要更新的话，就先找有没有相似的约束存在。有相似的约束就更新约束的constant。没有相似约束就添加新的约束。那么问题来了，那如何定义相似？看上面代码。就是firsetItem,secondItem,firstAttribute,secondAttribute,releation,multiplier,priority都相等就定义为相似，则更新constant即可。平时使用时update没生效是个什么情况？很有可能的就是multiplier,priority变了，或者同样效果的约束用了不同方式。比如：width设置，初始设置有可能是.equalTo(otherView), 然后数据源变了，需要刷新值，我们就理所当然的.equalTo(@55), 这样什么问题？sencondItem不一样，不仅不是update，还叠加了一个width约束上去,导致冲突，然后就懵逼了，wtf…..</p>
 <p>2、命名问题。view.left, view.centerX, 最好不要用这个, 用view.mas_left, view.mas_centerX。 这种命名很容易冲突，经常会有一些库或者我们自己的代码，也给UIView加了category,用centerX,left,right什么的来取view的坐标。这种比较通用的命名尽量避免。</p>
-<h2 id="one_more_thing…">one more thing…</h2><p>话说怎么才能想出这种牛逼的设计啊！！！！！！</p>
 ]]></content>
     <summary type="html">
     <![CDATA[<h2 id="Overview">Overview</h2><p>Masonry已经是离不开的开发库了，所有布局都用它，记录一下<a href="https://github.com/SnapKit/Masonry">Masonary</a>的源码学习。带着几个问题开始。</p]]>
     </summary>
     
-      <category term="iOS源码学习" scheme="https://github.com/zhuangxq/zhuangxq.github.io.git/tags/iOS%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0/"/>
-    
       <category term="masonry" scheme="https://github.com/zhuangxq/zhuangxq.github.io.git/tags/masonry/"/>
     
       <category term="自动布局" scheme="https://github.com/zhuangxq/zhuangxq.github.io.git/tags/%E8%87%AA%E5%8A%A8%E5%B8%83%E5%B1%80/"/>
+    
+      <category term="iOS源码学习" scheme="https://github.com/zhuangxq/zhuangxq.github.io.git/tags/iOS%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0/"/>
     
   </entry>
   
@@ -563,7 +562,7 @@ size = <span class="keyword">sizeof</span>(boottime);
     <span class="comment">// successful call</span>
     NSDate* bootDate = [NSDate dateWithTimeIntervalSince1970:boottime.tv_sec];
 }
-</code></pre><p>上面代码来自<a href="http://stackoverflow.com/questions/10331020/get-the-boot-time-in-objective-c" target="_blank" rel="external">这里</a>。关键代码主要是sysctl，用来获取或设置内核状态的函数。sysctl及更多内核状态信息<a href="https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man8/sysctl.8.html" target="_blank" rel="external">戳这里</a>。上面代码就是直接读取内核状态中的设备启动时间。KERN_BOOTTIME点击进去头文件是这样描述的：/<em> struct: time kernel was booted </em>/。内核启动时间，这总靠谱了吧。经验证，这个时间是靠谱的。但是有个问题，如果改了设备时间，这个重启时间居然也跟着变…可见，这个参数的返回值是根据当前设备时间计算来的。一些需要准确判断重启时间的逻辑，显然在改变设备时间的状况下就有问题了。所以，不满足要求…</p>
+</code></pre><p>上面代码来自<a href="http://stackoverflow.com/questions/10331020/get-the-boot-time-in-objective-c" target="_blank" rel="noopener">这里</a>。关键代码主要是sysctl，用来获取或设置内核状态的函数。sysctl及更多内核状态信息<a href="https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man8/sysctl.8.html" target="_blank" rel="noopener">戳这里</a>。上面代码就是直接读取内核状态中的设备启动时间。KERN_BOOTTIME点击进去头文件是这样描述的：/<em> struct: time kernel was booted </em>/。内核启动时间，这总靠谱了吧。经验证，这个时间是靠谱的。但是有个问题，如果改了设备时间，这个重启时间居然也跟着变…可见，这个参数的返回值是根据当前设备时间计算来的。一些需要准确判断重启时间的逻辑，显然在改变设备时间的状况下就有问题了。所以，不满足要求…</p>
 <h3 id="方法3">方法3</h3><pre><code><span class="preprocessor">#include <span class="title">&lt;arpa/inet.h&gt;</span></span>
 <span class="preprocessor">#include <span class="title">&lt;net/if.h&gt;</span></span>
 <span class="preprocessor">#include <span class="title">&lt;ifaddrs.h&gt;</span></span>
@@ -688,18 +687,18 @@ size_t size;
     <id>https://github.com/zhuangxq/zhuangxq.github.io.git/2015/07/06/hello-world/</id>
     <published>2015-07-06T13:20:49.000Z</published>
     <updated>2015-07-06T13:20:49.000Z</updated>
-    <content type="html"><![CDATA[<p>Welcome to <a href="http://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="http://hexo.io/docs/" target="_blank" rel="external">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="http://hexo.io/docs/troubleshooting.html" target="_blank" rel="external">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+    <content type="html"><![CDATA[<p>Welcome to <a href="http://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="http://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="http://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
 <h2 id="Quick_Start">Quick Start</h2><h3 id="Create_a_new_post">Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="http://hexo.io/docs/writing.html" target="_blank" rel="external">Writing</a></p>
+<p>More info: <a href="http://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
 <h3 id="Run_server">Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="http://hexo.io/docs/server.html" target="_blank" rel="external">Server</a></p>
+<p>More info: <a href="http://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
 <h3 id="Generate_static_files">Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="http://hexo.io/docs/generating.html" target="_blank" rel="external">Generating</a></p>
+<p>More info: <a href="http://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
 <h3 id="Deploy_to_remote_sites">Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="http://hexo.io/docs/deployment.html" target="_blank" rel="external">Deployment</a></p>
+<p>More info: <a href="http://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
 ]]></content>
     <summary type="html">
-    <![CDATA[<p>Welcome to <a href="http://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="http://hexo.io]]>
+    <![CDATA[<p>Welcome to <a href="http://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="http://hexo.io]]>
     </summary>
     
   </entry>
