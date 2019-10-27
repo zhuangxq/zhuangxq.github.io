@@ -81,10 +81,6 @@ var _hmt = _hmt || [];
     			
             
     			
-    			<a q-on="click: openSlider(e, 'friends')" href="javascript:void(0)">友链</a>
-    			
-            
-    			
     			<a q-on="click: openSlider(e, 'aboutme')" href="javascript:void(0)">关于我</a>
     			
             
@@ -180,250 +176,9 @@ var _hmt = _hmt || [];
     <div class="article-entry" itemprop="articleBody">
       
         <p>继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。</p>
-<h2 id="AFHTTPRequestSerializer">AFHTTPRequestSerializer</h2><p>AFHTTPRequestSerializer是生成NSURLRequest核心类。它有两个子类AFJSONRequestSerializer、AFPropertyListRequestSerializer，分别对应不同的参数生成方式。生成request方法：</p>
-<pre><code>- (<span class="type">NSMutableURLRequest</span> *)requestWithMethod:(<span class="type">NSString</span> *)<span class="keyword">method</span>
-                                 <span class="type">URLString</span>:(<span class="type">NSString</span> *)<span class="type">URLString</span>
-                                parameters:(id)parameters
-                                     error:(<span class="type">NSError</span> *__autoreleasing *)error
-{
-    <span class="type">NSParameterAssert</span>(<span class="keyword">method</span>);
-    <span class="type">NSParameterAssert</span>(<span class="type">URLString</span>);
-
-    <span class="type">NSURL</span> *url = [<span class="type">NSURL</span> <span class="type">URLWithString</span>:<span class="type">URLString</span>];
-
-    <span class="type">NSParameterAssert</span>(url);
-
-    <span class="type">NSMutableURLRequest</span> *mutableRequest = [[<span class="type">NSMutableURLRequest</span> alloc] initWithURL:url];
-    mutableRequest.<span class="type">HTTPMethod</span> = <span class="keyword">method</span>;
-
-    <span class="keyword">for</span> (<span class="type">NSString</span> *keyPath <span class="keyword">in</span> <span class="type">AFHTTPRequestSerializerObservedKeyPaths</span>()) { <span class="comment">#1</span>
-        <span class="keyword">if</span> ([self.mutableObservedChangedKeyPaths containsObject:keyPath]) {  <span class="comment">#1</span>
-            [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath]; <span class="comment">#1</span>
-        }
-    }
-
-    mutableRequest = [[self requestBySerializingRequest:mutableRequest withParameters:parameters error:error] mutableCopy];  <span class="comment">#2</span>
-
-    <span class="keyword">return</span> mutableRequest;
-}
-</code></pre><p>该方法创建一个新NSMutableRequest，#1部分是在设置一些请求配置，如allowsCellularAccess、cachePolicy、HTTPShouldHandleCookies等。这些配置的设置通过KVO观察，有设置值，则存到self.mutableObservedChangedKeyPaths，再把这些值通过KVC设置到NSMutableRequest。这个方式值得借鉴，简便明了。#2部分则是调用设置请求参数的方法，这是个AFURLRequestSerialization协议方法。接下来看下AFHTTPRequestSerializer对这个方法的实现（下面所有代码都会有略去一些非关键代码）：</p>
-<pre><code>- (<span class="built_in">NSURLRequest</span> *)requestBySerializingRequest:(<span class="built_in">NSURLRequest</span> *)request
-                               withParameters:(<span class="keyword">id</span>)parameters
-                                        error:(<span class="built_in">NSError</span> *__autoreleasing *)error
-{
-    <span class="built_in">NSMutableURLRequest</span> *mutableRequest = [request mutableCopy];
-
-    <span class="built_in">NSString</span> *query = <span class="literal">nil</span>;
-    <span class="keyword">if</span> (parameters) {
-        <span class="keyword">if</span> (<span class="keyword">self</span><span class="variable">.queryStringSerialization</span>) {  <span class="comment">//一个block，参数生成的方法外包出去了，给外部自行实现。</span>
-            <span class="built_in">NSError</span> *serializationError;
-            query = <span class="keyword">self</span><span class="variable">.queryStringSerialization</span>(request, parameters, &amp;serializationError);
-
-            <span class="keyword">if</span> (serializationError) {
-                <span class="keyword">if</span> (error) {
-                    *error = serializationError;
-                }
-
-                <span class="keyword">return</span> <span class="literal">nil</span>;
-            }
-        } <span class="keyword">else</span> {
-            <span class="keyword">switch</span> (<span class="keyword">self</span><span class="variable">.queryStringSerializationStyle</span>) {
-                <span class="keyword">case</span> AFHTTPRequestQueryStringDefaultStyle: <span class="comment">//默认参数生成方法,类似这样：ver=1.3.0&amp;idfa=<span class="doctag"><span class="keyword">xxx</span></span></span>
-                    query = AFQueryStringFromParameters(parameters);
-                    <span class="keyword">break</span>;
-            }
-        }
-    }
-
-    <span class="keyword">if</span> ([<span class="keyword">self</span><span class="variable">.HTTPMethodsEncodingParametersInURI</span> containsObject:[[request HTTPMethod] uppercaseString]]) {    <span class="comment">//如果请求方式是 GET,HEAD,DELETE, 则将参数接到URL后面</span>
-        <span class="keyword">if</span> (query &amp;&amp; query<span class="variable">.length</span> &gt; <span class="number">0</span>) {
-            mutableRequest<span class="variable">.URL</span> = [<span class="built_in">NSURL</span> URLWithString:[[mutableRequest<span class="variable">.URL</span> absoluteString] stringByAppendingFormat:mutableRequest<span class="variable">.URL</span><span class="variable">.query</span> ? <span class="string">@"&amp;%@"</span> : <span class="string">@"?%@"</span>, query]];
-        }
-    } <span class="keyword">else</span> {    <span class="comment">//POST方法</span>
-        <span class="comment">// #2864: an empty string is a valid x-www-form-urlencoded payload</span>
-        <span class="keyword">if</span> (!query) {
-            query = <span class="string">@""</span>;
-        }
-        <span class="keyword">if</span> (![mutableRequest valueForHTTPHeaderField:<span class="string">@"Content-Type"</span>]) {
-            [mutableRequest setValue:<span class="string">@"application/x-www-form-urlencoded"</span> forHTTPHeaderField:<span class="string">@"Content-Type"</span>];
-        }
-        [mutableRequest setHTTPBody:[query dataUsingEncoding:<span class="keyword">self</span><span class="variable">.stringEncoding</span>]];<span class="comment">//设置HTTPBody</span>
-    }
-
-    <span class="keyword">return</span> mutableRequest;
-}
-</code></pre><p>生成NSURLRequest大致如此，AFJSONRequestSerializer对应的参数生成方法：[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]， AFPropertyListRequestSerializer对应的参数生成方法：[NSPropertyListSerialization dataWithPropertyList:parameters format:self.format options:self.writeOptions error:error]。 如果参数有自己比较特殊结构，可以仿AFJSONRequestSerializer，实现协议方法，自定义生成方式。</p>
-<h3 id="分块数据上传">分块数据上传</h3><p>AFHTTPRequestSerializer这个类还有个比较重要的功能，就是实现分块数据上传的功能。分块上传是什么东西？我们知道HTTP分为三部分：状态行，请求头，请求体。主要数据一般放请求体，请求体却只有一个。那如何实现多块数据上传？答案很简单，就是多块数据按照一定格式拼成一块，并且多块数据间有分隔符，请求方需要告诉响应方当前请求是个分块数据和分割符长啥样。先看下如何用这个功能。</p>
-<pre><code>AFHTTPSessionManager *session = [AFHTTPSessionManager manager];
-[session <span class="string">POST:</span>@<span class="string">"https://api.app.net/stream/0/posts/stream/global"</span> <span class="string">parameters:</span>nil <span class="string">constructingBodyWithBlock:</span>^(id&lt;AFMultipartFormData&gt;  _Nonnull formData) {
-
-    NSData *data1 = [@<span class="string">"我是multipart data part111"</span> <span class="string">dataUsingEncoding:</span>NSUTF8StringEncoding];
-    NSData *data2 = [@<span class="string">"我是multipart data part222"</span> <span class="string">dataUsingEncoding:</span>NSUTF8StringEncoding];
-    NSData *data3 = [@<span class="string">"我是multipart data part333"</span> <span class="string">dataUsingEncoding:</span>NSUTF8StringEncoding];
-
-    [formData <span class="string">appendPartWithFormData:</span>data1 <span class="string">name:</span>@<span class="string">"11111"</span>];
-    [formData <span class="string">appendPartWithFormData:</span>data2 <span class="string">name:</span>@<span class="string">"22222"</span>];
-    [formData <span class="string">appendPartWithFormData:</span>data3 <span class="string">name:</span>@<span class="string">"33333"</span>];
-
-
-} <span class="string">progress:</span>^(NSProgress * _Nonnull uploadProgress) {
-
-} <span class="string">success:</span>^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-    NSLog(@<span class="string">"success:%@"</span>, responseObject);
-} <span class="string">failure:</span>^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-    NSLog(@<span class="string">"failed:%@"</span>, error);
-}];
-</code></pre><p>这个与正常的请求相比多了constructingBodyWithBlock，这个block就是用来添加分块数据。再看看这个请求，最终的HTTP请求长什么样。</p>
-<p><img src="/images/af_multipart_2.png" alt><br><img src="/images/af_multipart_3.png" alt></p>
-<p>看请求头的Content-Type:multipart/form-data; boundary=Boundary+7C0ABF26A3C30CEB。这是分块上传必须有的一个header，告诉响应方当前是分块数据，且分割线为Boundary+7C0ABF26A3C30CEB，响应方据此处理。由于分割线肯定不能跟数据块有一样的情况，所以分割线一般是一个随机复杂较长的值。接着看请求体，去掉分割线，就剩下三段数据，每段数据由Content-Disposition、空行、数据组成，<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html" target="_blank" rel="noopener">Content-Disposition</a>官方释义：The Content-Disposition response-header field has been proposed as a means for the origin server to suggest a default filename if the user requests that the content is saved to a file. 就是如果这块数据是要被保存成文件，那么Content-Disposition这个header就可以提供默认名。可以知道，其实分块数据请求其实就是POST请求，只不过在请求体数据做文章而已。下面的内容，都是围绕如何生成这个最终的请求体数据在做文章。</p>
-<p>看相关的几个类：</p>
-<p><img src="/images/afnet_multipart.png" alt></p>
-<p>AFStreamingMultipart总管分块数据的生成模块，AFMultipartBodyStream是一个数据流，AFHTTPBodyPart是具体的每个数据块的内容。AFMultipartFormData提供各种各样数据(string,data,file,stream…)的添加接口。下面看muiltipart请求如何生成(省略非关键代码):</p>
-<pre><code>- (<span class="type">NSMutableURLRequest</span> *)multipartFormRequestWithMethod:(<span class="type">NSString</span> *)<span class="keyword">method</span>
-                                              <span class="type">URLString</span>:(<span class="type">NSString</span> *)<span class="type">URLString</span>
-                                             parameters:(<span class="type">NSDictionary</span> *)parameters
-                              constructingBodyWithBlock:(<span class="type">void</span> (^)(id &lt;<span class="type">AFMultipartFormData</span>&gt; formData))<span class="keyword">block</span>
-                                                  error:(<span class="type">NSError</span> *__autoreleasing *)error
-{
-    <span class="type">NSMutableURLRequest</span> *mutableRequest = [self requestWithMethod:<span class="keyword">method</span> <span class="type">URLString</span>:<span class="type">URLString</span> parameters:<span class="keyword">nil</span> error:error];
-
-    __block <span class="type">AFStreamingMultipartFormData</span> *formData = [[<span class="type">AFStreamingMultipartFormData</span> alloc] initWithURLRequest:mutableRequest stringEncoding:<span class="type">NSUTF8StringEncoding</span>];
-
-    <span class="keyword">if</span> (parameters) {
-        ...parameters转成data当成一个数据块添加到formData...
-        [formData appendPartWithFormData:data name:[pair.field description]];
-    }
-
-    //添加数据块
-    <span class="keyword">if</span> (<span class="keyword">block</span>) {
-        <span class="keyword">block</span>(formData);
-    }
-
-    //将已添加的数据块拼装成最终形式，返回。
-    <span class="keyword">return</span> [formData requestByFinalizingMultipartFormData];
-}
-</code></pre><p>数据块如何添加，举个文件如何添加的例子：</p>
-<pre><code>- (<span class="built_in">BOOL</span>)appendPartWithFileURL:(<span class="built_in">NSURL</span> *)fileURL
-                         name:(<span class="built_in">NSString</span> *)name
-                     fileName:(<span class="built_in">NSString</span> *)fileName
-                     mimeType:(<span class="built_in">NSString</span> *)mimeType
-                        error:(<span class="built_in">NSError</span> * __autoreleasing *)error
-{
-
-    ...判断参数是否正确，file是否存在...
-
-    <span class="built_in">NSDictionary</span> *fileAttributes = [[<span class="built_in">NSFileManager</span> defaultManager] attributesOfItemAtPath:[fileURL path] error:error];
-    <span class="keyword">if</span> (!fileAttributes) {
-        <span class="keyword">return</span> <span class="literal">NO</span>;
-    }
-
-    <span class="comment">//设置这个数据块的header，Content-Dispositon和Content-Type。Content-Type指的是这块数据的类型。</span>
-    <span class="built_in">NSMutableDictionary</span> *mutableHeaders = [<span class="built_in">NSMutableDictionary</span> dictionary];
-    [mutableHeaders setValue:[<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"form-data; name=\"%@\"; filename=\"%@\""</span>, name, fileName] forKey:<span class="string">@"Content-Disposition"</span>];
-    [mutableHeaders setValue:mimeType forKey:<span class="string">@"Content-Type"</span>];
-
-    <span class="comment">//描述这个数据块的类，有header,boundary,stringEncoding,length等基本信息，body就是存数据的内容，类型为id，可以放各种各样数据，这里放文件URL。最终会通过流读出数据。</span>
-    AFHTTPBodyPart *bodyPart = [[AFHTTPBodyPart alloc] init];
-    bodyPart<span class="variable">.stringEncoding</span> = <span class="keyword">self</span><span class="variable">.stringEncoding</span>;
-    bodyPart<span class="variable">.headers</span> = mutableHeaders;
-    bodyPart<span class="variable">.boundary</span> = <span class="keyword">self</span><span class="variable">.boundary</span>;
-    bodyPart<span class="variable">.body</span> = fileURL;
-    bodyPart<span class="variable">.bodyContentLength</span> = [fileAttributes[<span class="built_in">NSFileSize</span>] unsignedLongLongValue];
-
-    <span class="comment">//单个数据块添加到整个数据块中</span>
-    [<span class="keyword">self</span><span class="variable">.bodyStream</span> appendHTTPBodyPart:bodyPart];
-
-    <span class="keyword">return</span> <span class="literal">YES</span>;
-}
-</code></pre><p>其他数据类型添加大同小异，不再赘述。</p>
-<p>数据块添加完，再看各个数据块如何拼装成最后的请求体。</p>
-<pre><code>- (NSMutableURLRequest *)requestByFinalizingMultipartFormData {
-
-    // Reset the initial and final boundaries <span class="keyword">to</span> ensure correct Content-Length
-    [<span class="literal">self</span>.bodyStream <span class="built_in">set</span>InitialAndFinalBoundaries];
-    [<span class="literal">self</span>.request <span class="built_in">set</span>HTTPBodyStream:<span class="literal">self</span>.bodyStream];
-
-    [<span class="literal">self</span>.request <span class="built_in">set</span>Value:[NSString stringWithFormat:@<span class="string">"multipart/form-data; boundary=%@"</span>, <span class="literal">self</span>.boundary] <span class="keyword">for</span>HTTPHeaderField:@<span class="string">"Content-Type"</span>];
-    [<span class="literal">self</span>.request <span class="built_in">set</span>Value:[NSString stringWithFormat:@<span class="string">"%llu"</span>, [<span class="literal">self</span>.bodyStream contentLength]] <span class="keyword">for</span>HTTPHeaderField:@<span class="string">"Content-Length"</span>];
-
-    return <span class="literal">self</span>.request;
-}
-</code></pre><p>这里主要关心[self.request setHTTPBodyStream:self.bodyStream]， 其他代码好懂。这个设置后，HTTPBody请被置空，这个流的完整数据将被作为请求体。这个流需要是还没打开的，request会接管这个流，请求时候会打开，不用我们调流的open。关于流可以补一下<a href="http://southpeak.github.io/blog/2014/07/17/ioszhong-liu-stream-de-shi-yong/" target="_blank" rel="noopener">这篇</a>，stackoverflow看到个比较一针见血的描述：The thing you need to understand about NSStreams, is “don’t call us, we’ll call you.” When the stream has data available, it will notify its delegate, and then you read whatever data is available and tell it to go get some more. 然而也有主动call you的情况，AFHTTPBodyPart就是这样干的。</p>
-<p>下面看流是如何读的，下面是AFMultipartBodyStream的代理方法：</p>
-<pre><code>- (<span class="built_in">NSInteger</span>)read:(uint8_t *)buffer
-        maxLength:(<span class="built_in">NSUInteger</span>)length
-{
-    <span class="built_in">NSInteger</span> totalNumberOfBytesRead = <span class="number">0</span>;
-    <span class="comment">//遍历每个AFHTTPBodyPart，有数据就读，没数据就跳到下一块</span>
-    <span class="keyword">while</span> ((<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead &lt; MIN(length, <span class="keyword">self</span><span class="variable">.numberOfBytesInPacket</span>)) {
-        <span class="keyword">if</span> (!<span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span> || ![<span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span> hasBytesAvailable]) {
-            <span class="keyword">if</span> (!(<span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span> = [<span class="keyword">self</span><span class="variable">.HTTPBodyPartEnumerator</span> nextObject])) {
-                <span class="keyword">break</span>;
-            }
-        } <span class="keyword">else</span> {
-            <span class="built_in">NSUInteger</span> maxLength = MIN(length, <span class="keyword">self</span><span class="variable">.numberOfBytesInPacket</span>) - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead;
-            <span class="comment">//读取当前bodyPart的流。</span>
-            <span class="built_in">NSInteger</span> numberOfBytesRead = [<span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span> read:&amp;buffer[totalNumberOfBytesRead] maxLength:maxLength];
-            <span class="keyword">if</span> (numberOfBytesRead == -<span class="number">1</span>) {
-                <span class="keyword">self</span><span class="variable">.streamError</span> = <span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span><span class="variable">.inputStream</span><span class="variable">.streamError</span>;
-                <span class="keyword">break</span>;
-            } <span class="keyword">else</span> {
-                totalNumberOfBytesRead += numberOfBytesRead;
-                <span class="comment">//每个数据块读完设延时，如果有的话，避免"request body stream exhausted"，默认无delay。</span>
-                <span class="keyword">if</span> (<span class="keyword">self</span><span class="variable">.delay</span> &gt; <span class="number">0.0</span>f) {
-                    [<span class="built_in">NSThread</span> sleepForTimeInterval:<span class="keyword">self</span><span class="variable">.delay</span>];
-                }
-            }
-        }
-    }
-    <span class="keyword">return</span> totalNumberOfBytesRead;
-}
-</code></pre><p>AFHTTPBodyPart的流读取方法：</p>
-<pre><code>- (<span class="built_in">NSInteger</span>)read:(uint8_t *)buffer
-        maxLength:(<span class="built_in">NSUInteger</span>)length
-{
-    <span class="built_in">NSInteger</span> totalNumberOfBytesRead = <span class="number">0</span>;
-    <span class="comment">//_phase表示当前处于数据块的哪块内容，边界线、header或者数据正文。。</span>
-    <span class="comment">//读取起始分割符或者中间的分割符</span>
-    <span class="keyword">if</span> (_phase == AFEncapsulationBoundaryPhase) {
-        <span class="built_in">NSData</span> *encapsulationBoundaryData = [([<span class="keyword">self</span> hasInitialBoundary] ? AFMultipartFormInitialBoundary(<span class="keyword">self</span><span class="variable">.boundary</span>) : AFMultipartFormEncapsulationBoundary(<span class="keyword">self</span><span class="variable">.boundary</span>)) dataUsingEncoding:<span class="keyword">self</span><span class="variable">.stringEncoding</span>];
-        <span class="comment">//将data读到buffer，并且跳转到下一个_phase</span>
-        totalNumberOfBytesRead += [<span class="keyword">self</span> readData:encapsulationBoundaryData intoBuffer:&amp;buffer[totalNumberOfBytesRead] maxLength:(length - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead)];
-    }
-    <span class="comment">//读取header数据</span>
-    <span class="keyword">if</span> (_phase == AFHeaderPhase) {
-        <span class="comment">//将data读到buffer，并且跳转到下一个_phase</span>
-        <span class="built_in">NSData</span> *headersData = [[<span class="keyword">self</span> stringForHeaders] dataUsingEncoding:<span class="keyword">self</span><span class="variable">.stringEncoding</span>];
-        totalNumberOfBytesRead += [<span class="keyword">self</span> readData:headersData intoBuffer:&amp;buffer[totalNumberOfBytesRead] maxLength:(length - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead)];
-    }
-    <span class="comment">//读取数据正文</span>
-    <span class="keyword">if</span> (_phase == AFBodyPhase) {
-        <span class="built_in">NSInteger</span> numberOfBytesRead = <span class="number">0</span>;
-        <span class="comment">//这个数据正文inputStream就是主动去read.</span>
-        numberOfBytesRead = [<span class="keyword">self</span><span class="variable">.inputStream</span> read:&amp;buffer[totalNumberOfBytesRead] maxLength:(length - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead)];
-        <span class="keyword">if</span> (numberOfBytesRead == -<span class="number">1</span>) {
-            <span class="keyword">return</span> -<span class="number">1</span>;
-        } <span class="keyword">else</span> {
-            totalNumberOfBytesRead += numberOfBytesRead;
-
-            <span class="keyword">if</span> ([<span class="keyword">self</span><span class="variable">.inputStream</span> streamStatus] &gt;= <span class="built_in">NSStreamStatusAtEnd</span>) {
-                [<span class="keyword">self</span> transitionToNextPhase];
-            }
-        }
-    }
-    <span class="comment">//判断是否是最后一个数据块，是的话加上分割符</span>
-    <span class="keyword">if</span> (_phase == AFFinalBoundaryPhase) {
-        <span class="built_in">NSData</span> *closingBoundaryData = ([<span class="keyword">self</span> hasFinalBoundary] ? [AFMultipartFormFinalBoundary(<span class="keyword">self</span><span class="variable">.boundary</span>) dataUsingEncoding:<span class="keyword">self</span><span class="variable">.stringEncoding</span>] : [<span class="built_in">NSData</span> data]);
-        totalNumberOfBytesRead += [<span class="keyword">self</span> readData:closingBoundaryData intoBuffer:&amp;buffer[totalNumberOfBytesRead] maxLength:(length - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead)];
-    }
-
-    <span class="keyword">return</span> totalNumberOfBytesRead;
-}
-</code></pre><p>以上就是分块数据上传的内容。读完源码，发现然而从来没用过这个功能- -。避免知识用到方恨少时，看看也是值得的。</p>
-<h2 id="AFURLResponseSerialization">AFURLResponseSerialization</h2><p>请求的响应则单纯的多，比较简单，无非就是状态判断，MIME判断，不同类型数据的处理。</p>
-<p><img src="/images/af_response.png" alt></p>
-<p>基类AFHTTPResponseSerializer实现数据是否有效的校验，数据不做处理，原样返回data。几个子类则有对应的数据处理方法，值得一提的是JSON数据有帮我们做了一些空字段处理。</p>
-
+        
+          <a class="article-more-a" href="/2016/07/02/AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization/#more">more >></a>
+        
       
 
       
@@ -488,79 +243,9 @@ var _hmt = _hmt || [];
         <p>学习<a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a>前，最好先了解下<a href="http://objccn.io/issue-5-4/" target="_blank" rel="noopener">NSURLSession</a>。本文先介绍一下AFNetworking如何工作，整体结构是怎样的。先看架构图：</p>
 <p><img src="/images/AFSummary.png" alt></p>
 <p>AFURLSessionManager为核心类，类似于MVC中的controller，负责组织起整个工作流程，这里它要管的有AFHTTPRequestSerializer请求的生成，AFHTTPResponseSerializer响应处理的生成，NSURLSession的管理，请求task的各种各样回调处理，AFSecurityPolicy安全策略配置、缓存策略配置等。下面通过一个普通GET请求函数调用栈，了解下整套流程，分三部分：请求前、请求中、请求后。</p>
-<p>请求前(in main queue)：</p>
-<pre><code>[AFHTTPSessionManager <span class="string">GET:</span><span class="string">parameters:</span><span class="string">progress:</span><span class="string">success:</span><span class="string">failure:</span>]
-  [AFHTTPSessionManager <span class="string">dataTaskWithHTTPMethod:</span><span class="string">URLString:</span><span class="string">parameters:</span><span class="string">uploadProgress:</span><span class="string">downloadProgress:</span><span class="string">success:</span><span class="string">failure:</span>]
-    [AFHTTPRequestSerializer <span class="string">requestWithMethod:</span><span class="string">URLString:</span><span class="string">parameters:</span><span class="string">error:</span>]   #<span class="number">1</span>
-    [AFHTTPRequestSerializer <span class="string">requestBySerializingRequest:</span><span class="string">withParameters:</span><span class="string">error:</span>] #<span class="number">1</span>
-    [AFURLSessionManager <span class="string">dataTaskWithRequest:</span><span class="string">uploadProgress:</span><span class="string">downloadProgress:</span><span class="string">completionHandler:</span>]  #<span class="number">2</span>
-        [AFURLSessionManager <span class="string">addDelegateForDataTask:</span><span class="string">uploadProgress:</span><span class="string">downloadProgress:</span><span class="string">completionHandler:</span>]  
-        [AFURLSessionManager <span class="string">setDelegate:</span><span class="string">forTask:</span>]
-        [AFURLSessionManager <span class="string">addNotificationObserverForTask:</span>]
-  [task resume]  #<span class="number">3</span>
-</code></pre><p>AFHTTPSessionManager是AFURLSessionManager的子类，提供更方便的接口。#1是根据URL、请求参数生成NSMutableURLRequest，生成工作由AFHTTPRequestSerializer来做。#2就是创建NSURLSessionDataTask，同时也做了一些代理添加设置(代理、回调block管理下面讲)。#3[task resume]请求正式开始。</p>
-<p>请求中(not in main thread)：</p>
-<pre><code>[AFURLSessionManager <span class="string">URLSession:</span><span class="string">didReceiveChallenge:</span><span class="string">completionHandler:</span>] #<span class="number">1</span>
-    [AFSecurityPolicy <span class="string">evaluateServerTrust:</span><span class="string">forDomain:</span>] #<span class="number">1</span>
-        AFServerTrustIsValid  #<span class="number">1</span>
-
-[AFURLSessionManager <span class="string">URLSession:</span><span class="string">dataTask:</span><span class="string">didReceiveData:</span>] #<span class="number">2</span>
-    [AFURLSessionManagerTaskDelegate <span class="string">URLSession:</span><span class="string">dataTask:</span><span class="string">didReceiveData:</span>] #<span class="number">3</span>
-
-[AFURLSessionManager <span class="string">URLSession:</span><span class="string">task:</span><span class="string">didCompleteWithError:</span>] #<span class="number">4</span>
-[AFURLSessionManagerTaskDelegate <span class="string">URLSession:</span><span class="string">task:</span><span class="string">didCompleteWithError:</span>] #<span class="number">4</span>
-[AFURLSessionManager <span class="string">removeDelegateForTask:</span>]
-</code></pre><p>第一个小部分#1是https的证书校验(明年肯定是都要https了…),这部分内容准备另外写一篇。#2就是数据接收。#3的AFURLSessionManagerTaskDelegate是代理管理的一个类，下面单独讲。 #4数据接收完成，请求结束，有错误就响应错误，没错误就去处理数据。</p>
-<p>请求后(in queue: com.alamofire.networking.session.manager.processing)：</p>
-<pre><code>[AFJSONResponseSerializer <span class="string">responseObjectForResponse:</span><span class="string">data:</span><span class="string">error:</span>]
-    [AFHTTPResponseSerializer <span class="string">validateResponse:</span><span class="string">data:</span><span class="string">error:</span>]
-</code></pre><p>请求后这俩就是数据的校验和数据的处理。AFJSONResponseSerializer继承自AFHTTPResponseSerializer,处理JSON数据。数据处理完，回主线程，success(failure) block回调。流程结束。</p>
-<p>下面看下上面提到的AFURLSessionManagerTaskDelegate，代理回调、block都是怎么处理的？请求前#2有个addDelegate函数：</p>
-<pre><code>- (<span class="keyword">void</span>)addDelegateForDataTask:(<span class="built_in">NSURLSessionDataTask</span> *)dataTask
-                uploadProgress:(nullable <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *uploadProgress)) uploadProgressBlock
-              downloadProgress:(nullable <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *downloadProgress)) downloadProgressBlock
-             completionHandler:(<span class="keyword">void</span> (^)(<span class="built_in">NSURLResponse</span> *response, <span class="keyword">id</span> responseObject, <span class="built_in">NSError</span> *error))completionHandler
-{
-    <span class="comment">//创建代理管理对象，并将三个block交给这个对象。</span>
-    AFURLSessionManagerTaskDelegate *delegate = [[AFURLSessionManagerTaskDelegate alloc] init];
-    delegate<span class="variable">.manager</span> = <span class="keyword">self</span>;    <span class="comment">//持有AFURLSessionManager</span>
-    delegate<span class="variable">.completionHandler</span> = completionHandler;
-
-    dataTask<span class="variable">.taskDescription</span> = <span class="keyword">self</span><span class="variable">.taskDescriptionForSessionTasks</span>;
-    [<span class="keyword">self</span> setDelegate:delegate forTask:dataTask];
-
-    delegate<span class="variable">.uploadProgressBlock</span> = uploadProgressBlock;
-    delegate<span class="variable">.downloadProgressBlock</span> = downloadProgressBlock;
-}
-
-- (<span class="keyword">void</span>)setDelegate:(AFURLSessionManagerTaskDelegate *)delegate
-            forTask:(<span class="built_in">NSURLSessionTask</span> *)task
-{
-    <span class="built_in">NSParameterAssert</span>(task);
-    <span class="built_in">NSParameterAssert</span>(delegate);
-
-    [<span class="keyword">self</span><span class="variable">.lock</span> lock];
-    <span class="comment">//task和delegate manager以键值对方式存在这个字典。</span>
-    <span class="keyword">self</span><span class="variable">.mutableTaskDelegatesKeyedByTaskIdentifier</span>[@(task<span class="variable">.taskIdentifier</span>)] = delegate;
-    [delegate setupProgressForTask:task];    <span class="comment">//进度回调设置，用KVO观察task的几个进度值。</span>
-    [<span class="keyword">self</span> addNotificationObserverForTask:task];
-    [<span class="keyword">self</span><span class="variable">.lock</span> unlock];
-}
-</code></pre><p>从上面代码可以看出，AFURLSessionManager的进度回调和完成completionHandle都是交给了这个代理管理类。再看下这个类的@interface。</p>
-<pre><code><span class="class"><span class="keyword">@interface</span> <span class="title">AFURLSessionManagerTaskDelegate</span> : <span class="title">NSObject</span> &lt;<span class="title">NSURLSessionTaskDelegate</span>, <span class="title">NSURLSessionDataDelegate</span>, <span class="title">NSURLSessionDownloadDelegate</span>&gt;</span>
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">weak</span>) AFURLSessionManager *manager;
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSMutableData</span> *mutableData;
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSProgress</span> *uploadProgress;
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSProgress</span> *downloadProgress;
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) <span class="built_in">NSURL</span> *downloadFileURL;
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) AFURLSessionDownloadTaskDidFinishDownloadingBlock downloadTaskDidFinishDownloading;
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) AFURLSessionTaskProgressBlock uploadProgressBlock;
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) AFURLSessionTaskProgressBlock downloadProgressBlock;
-<span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">copy</span>) AFURLSessionTaskCompletionHandler completionHandler;
-<span class="keyword">@end</span>
-</code></pre><p>可见主要的回调数据都交给了这个类，包括回调data，下载的fileURL。这个类实现了三个协议的三个方法，分别是数据接收didReceiveData，请求完成didCompleteWithError， 下载完成didFinishDownloadingToURL。所以这个类接管了进度和完成回调，处理了回调数据，最后完成block也在此。这里三个协议方法，仅仅就是提供三个方法而已,NSURLSession相关的代理并不是直接回调这三函数，这三函数是在AFURLSessionManager中的代理中调用。换句话，这三方法你随便换个名字也没啥问题，就是个普通方法。这里容易混淆。</p>
-<p>另外，这里为什么要把进度、回调数据、数据处理这块单独拆出来？个人瞎以为：这样类的职能更清晰，AFURLSessionManager就是做网络请求的事，请求进度管理、请求回来的后事就是交给AFURLSessionManagerTaskDelegate，拆开的一个好处就是可拓展性增强，想要替换或者增加一个后事处理类型就比较容易了。不过也想不出这里还需要扩展出什么东西，或者也仅仅只是想做个代码拆分而已。</p>
-
+        
+          <a class="article-more-a" href="/2016/06/25/AFNetworking源码阅读笔记之一/#more">more >></a>
+        
       
 
       
@@ -639,156 +324,9 @@ var _hmt = _hmt || [];
 <li>链式调用的语法是如何实现的？</li>
 <li>使用注意项？</li>
 </ul>
-<h3 id="工作流程">工作流程</h3><p>Masonry目录，红框内为主要类。<br><img src="/images/masonry_1.png" alt></p>
-<p>MASConstraints:核心类，可以表示NSLayoutConstraint的信息，可以是一个或一组约束。分别对应两个子类MASViewConstraints，MASCompositeConstraint。链式调用的实现也来自这个类。下文分析。</p>
-<p>MASViewConstraints:MASConstraints子类，包含一个约束的相关信息，first/second MASViewAttribute, layoutRelation。提供安装、卸载约束的方法。下文“约束”都指MASViewConstraints。</p>
-<p>MASCompositeConstraint:MASConstraints子类，包含多个MASViewConstraints。下文称之为”约束集”。</p>
-<p>MASViewAttribute:存储NSLayoutAttribute信息，和其对应的view。</p>
-<p>MASConstraintMaker:如其名，这是一个maker(废话！)。这相当于一个发动机，负责生产约束，并让约束工作起来。</p>
-<p>先看一段代码，这个我们再熟悉不过。mas_一敲，回车一按，调的就是它！</p>
-<pre><code>- (<span class="built_in">NSArray</span> *)mas_makeConstraints:(<span class="keyword">void</span>(^)(MASConstraintMaker *))block {
-    <span class="keyword">self</span><span class="variable">.translatesAutoresizingMaskIntoConstraints</span> = <span class="literal">NO</span>;
-    MASConstraintMaker *constraintMaker = [[MASConstraintMaker alloc] initWithView:<span class="keyword">self</span>];
-    block(constraintMaker);
-    <span class="keyword">return</span> [constraintMaker install];
-}
-</code></pre><p>Masonry工作入口在此，创建一个发动机MASConstraintMaker, block(constraintMaker)的作用则是创建约束。再看这个方法的调用：</p>
-<pre><code><span class="collection">[topView mas_makeConstraints:^<span class="list">(<span class="keyword">MASConstraintMaker</span> *make)</span> <span class="collection">{
-    make.top.equalTo<span class="list">(<span class="keyword">self.view</span>)</span>.offSet<span class="list">(<span class="number">10</span>)</span><span class="comment">;</span>
-    make.left.right.equalTo<span class="list">(<span class="keyword">self.view</span>)</span><span class="comment">;</span>
-    make.bottom.equalTo<span class="list">(<span class="keyword">self.view</span>)</span><span class="comment">;</span>
-}</span>]</span><span class="comment">;</span>
-</code></pre><p>make.bottom.equalTo(self.view)就是创建一条MASViewConstraints约束，make.left.right.equalTo(self.view)创建一条MASCompositeConstraint约束(包含两条MASViewConstraints约束)。结合上面两段代码看出，block(constraintMaker)就是通过maker创建约束，每条约束会存安装一条NSLayoutConstraint的所有信息(包括firsetItem, secondItem, firstAttribute, secondAttribute, layoutRelation, priority, constant等。)</p>
-<p>接着看下make.top.equalTo(self.view)如何产生一条约束。make.top执行的三个函数。</p>
-<pre><code>- (MASConstraint *)top {
-    <span class="keyword">return</span> [self <span class="string">addConstraintWithLayoutAttribute:</span>NSLayoutAttributeTop];
-}
-- (MASConstraint *)<span class="string">addConstraintWithLayoutAttribute:</span>(NSLayoutAttribute)layoutAttribute {
-    <span class="keyword">return</span> [self <span class="string">constraint:</span>nil <span class="string">addConstraintWithLayoutAttribute:</span>layoutAttribute];
-}
-- (MASConstraint *)<span class="string">constraint:</span>(MASConstraint *)constraint <span class="string">addConstraintWithLayoutAttribute:</span>(NSLayoutAttribute)layoutAttribute {
-    MASViewAttribute *viewAttribute = [[MASViewAttribute alloc] <span class="string">initWithView:</span>self.view <span class="string">layoutAttribute:</span>layoutAttribute];
-    MASViewConstraint *newConstraint = [[MASViewConstraint alloc] <span class="string">initWithFirstViewAttribute:</span>viewAttribute];
-    <span class="keyword">if</span> ([constraint <span class="string">isKindOfClass:</span>MASViewConstraint.<span class="keyword">class</span>]) {
-        <span class="comment">//replace with composite constraint</span>
-        NSArray *children = @[constraint, newConstraint];
-        MASCompositeConstraint *compositeConstraint = [[MASCompositeConstraint alloc] <span class="string">initWithChildren:</span>children];
-        compositeConstraint.delegate = self;
-        [self <span class="string">constraint:</span>constraint <span class="string">shouldBeReplacedWithConstraint:</span>compositeConstraint];
-        <span class="keyword">return</span> compositeConstraint;
-    }
-    <span class="keyword">if</span> (!constraint) {
-        newConstraint.delegate = self;
-        [self.constraints <span class="string">addObject:</span>newConstraint];
-    }
-    <span class="keyword">return</span> newConstraint;
-}
-</code></pre><p>看得出最终return 的是newConstraint，一个MASViewConstraint。大致过程：创建一个包含view是firstItem，attribute是NSLayoutAttributeTop的MASViewAttribute，再通过这个MASViewAttribute创建一个约束。并返回这个约束。这里有个重要信息, 不管创建的是约束或者约束集，它们都有个delegate指向maker。这是后面链式语法的关键点。另一个没那么重要信息是Masonry只在这个地方创建约束或约束集。make.top执行完毕，返回一个约束，接着看看.equalTo做了什么。</p>
-<pre><code>- (MASConstraint * (^)(<span class="keyword">id</span>))equalTo {
-    <span class="keyword">return</span> ^<span class="keyword">id</span>(<span class="keyword">id</span> attribute) {
-        <span class="keyword">return</span> <span class="keyword">self</span><span class="variable">.equalToWithRelation</span>(attribute, <span class="built_in">NSLayoutRelationEqual</span>);
-    };
-}
-
-- (MASConstraint * (^)(<span class="keyword">id</span>, <span class="built_in">NSLayoutRelation</span>))equalToWithRelation {
-    <span class="keyword">return</span> ^<span class="keyword">id</span>(<span class="keyword">id</span> attribute, <span class="built_in">NSLayoutRelation</span> relation) {
-        <span class="keyword">if</span> ([attribute isKindOfClass:<span class="built_in">NSArray</span><span class="variable">.class</span>]) {
-            <span class="built_in">NSAssert</span>(!<span class="keyword">self</span><span class="variable">.hasLayoutRelation</span>, <span class="string">@"Redefinition of constraint relation"</span>);
-            <span class="built_in">NSMutableArray</span> *children = <span class="built_in">NSMutableArray</span><span class="variable">.new</span>;
-            <span class="keyword">for</span> (<span class="keyword">id</span> attr <span class="keyword">in</span> attribute) {
-                MASViewConstraint *viewConstraint = [<span class="keyword">self</span> <span class="keyword">copy</span>];
-                viewConstraint<span class="variable">.secondViewAttribute</span> = attr;
-                [children addObject:viewConstraint];
-            }
-            MASCompositeConstraint *compositeConstraint = [[MASCompositeConstraint alloc] initWithChildren:children];
-            compositeConstraint<span class="variable">.delegate</span> = <span class="keyword">self</span><span class="variable">.delegate</span>;
-            [<span class="keyword">self</span><span class="variable">.delegate</span> constraint:<span class="keyword">self</span> shouldBeReplacedWithConstraint:compositeConstraint];
-            <span class="keyword">return</span> compositeConstraint;
-        } <span class="keyword">else</span> {
-            <span class="built_in">NSAssert</span>(!<span class="keyword">self</span><span class="variable">.hasLayoutRelation</span> || <span class="keyword">self</span><span class="variable">.layoutRelation</span> == relation &amp;&amp; [attribute isKindOfClass:<span class="built_in">NSValue</span><span class="variable">.class</span>], <span class="string">@"Redefinition of constraint relation"</span>);
-            <span class="keyword">self</span><span class="variable">.layoutRelation</span> = relation;
-            <span class="keyword">self</span><span class="variable">.secondViewAttribute</span> = attribute;
-            <span class="keyword">return</span> <span class="keyword">self</span>;
-        }
-    };
-}
-</code></pre><p>两个函数，先看第一行和最后一行，第一行equalTo返回的是一个block，最后一行block中return self, 执行block返回的是就是self约束本身，有什么用？后面可以接着再用.offSet.priority等做其他设置。这里block怎么用的来着：供外界传入参数，在里头用参数进行一些设置，再返回约束本身，后面继续调用。（不管有多少参数要设置，都可以用这种参数一直.下去。）再看这个block里面做了什么事情，self.secondViewAttribute = attribute，设置约束的secondViewAttribute,(ps:这里传入的attribute是UIView，在setter函数里会自动生成一个真正attribute)。 这里设置了secondAttribute,那first哪里设置呢？回上面看一下maker生产第一个约束(initWithFirstViewAttribute:viewAttribute),那会设置了firstAttribute。最后的.offSet就是设置约束的constant的，返回约束本身。这里有个不明白点，这里.equalTo为什么要通过block来设置？像.offSet那样直接传入参数，返回self，不也可以？看着没什么差别。搞不懂block好处在哪…</p>
-<p>另外，代码可以看出attribute也可以是数组，对应make.top.equalTo(@[self.view, otherView])这种用法，这种用法则会产生一个约束集。对约束集调用.offSet或者.equalTo, 就是取出约束集的每一个约束，都处理一遍。下面来看另一种情况，make.left.right.top.equalTo(self.view)。</p>
-<p>从上分析得make.left产生一个firstItem为leftAttribute的约束，接下来就是”约束.right”会怎样？答案是，生成一个firstItem为rightAttribute的约束， 两个约束合成一个约束集。见代码：</p>
-<pre><code>- (MASConstraint *)right {
-    <span class="keyword">return</span> [<span class="keyword">self</span> addConstraintWithLayoutAttribute:<span class="built_in">NSLayoutAttributeRight</span>];
-}
-- (MASConstraint *)addConstraintWithLayoutAttribute:(<span class="built_in">NSLayoutAttribute</span>)layoutAttribute {
-    <span class="built_in">NSAssert</span>(!<span class="keyword">self</span><span class="variable">.hasLayoutRelation</span>, <span class="string">@"Attributes should be chained before defining the constraint relation"</span>);
-
-    <span class="keyword">return</span> [<span class="keyword">self</span><span class="variable">.delegate</span> constraint:<span class="keyword">self</span> addConstraintWithLayoutAttribute:layoutAttribute];
-}
-</code></pre><p>这里self.delegate的就是maker，用maker创建rightAttribute约束，合成一个约束集。maker创建约束代码已经贴在上面。再看继续.top会怎样，代码：</p>
-<pre><code>- (MASConstraint *)top {
-    return [<span class="keyword">self </span><span class="keyword">addConstraintWithLayoutAttribute:NSLayoutAttributeRight];
-</span>}
-- (MASConstraint *)<span class="keyword">addConstraintWithLayoutAttribute:(NSLayoutAttribute)layoutAttribute </span>{
-    [<span class="keyword">self </span>constraint:<span class="keyword">self </span><span class="keyword">addConstraintWithLayoutAttribute:layoutAttribute];
-</span>    return <span class="keyword">self;
-</span>}
-- (MASConstraint *)constraint:(MASConstraint __unused *)constraint <span class="keyword">addConstraintWithLayoutAttribute:(NSLayoutAttribute)layoutAttribute </span>{
-    id&lt;MASConstraintDelegate&gt; <span class="keyword">strongDelegate </span>= <span class="keyword">self.delegate;
-</span>    MASConstraint *newConstraint = [<span class="keyword">strongDelegate </span>constraint:<span class="keyword">self </span><span class="keyword">addConstraintWithLayoutAttribute:layoutAttribute];
-</span>    newConstraint.delegate = <span class="keyword">self;
-</span>    [<span class="keyword">self.childConstraints </span><span class="keyword">addObject:newConstraint];
-</span>    return newConstraint<span class="comment">;</span>
-}
-</code></pre><p>同样这里delegate就是maker，用maker创建一个约束，加入到这个约束集。最后make.left.right.top.equalTo(self.view)，.equalTo就是从约束集里一个个约束抓出来.equalTo一下就是了。</p>
-<p>总结一下,共三个步骤：</p>
-<ol>
-<li>maker生产约束或约束集，方式是”maker.left”或”约束.right”(也就是:make.left.right),约束是通过delegate调用maker的生产方法。</li>
-<li>约束信息设置，设置secondItem, layoutRelation, constant, priority，约束本身提供约束相关信息设置方法，方式是.equalTo, .offSet .priority, 约束集的相关信息设置就是遍历处理包含的约束。</li>
-<li>maker生产完约束，install all就完了。方式：maker存有所有设置的约束，install本身的方法在约束类里，maker遍历执行。</li>
-</ol>
-<h2 id="链式调用语法如何实现？">链式调用语法如何实现？</h2><p>上面的分析，链式语法如何实现已经很清晰了。.left .right. equalTo. offset等都会返回约束本身或者一个约束集。约束或约束集又可以做下一次…的链式调用。信息的设置方式有.offSet(@1),就直接传值进去，还有.equalTo,通过block来传。</p>
-<h2 id="使用注意事项？">使用注意事项？</h2><p>大量的Masonry使用，基本没出什么状况，是比较稳定的。有两个小问题要稍微注意下。</p>
-<p>1、mas_updateConstraints,有遇到这个没生效的情况。看一下代码：</p>
-<pre><code>- (<span class="keyword">void</span>)install {
-
-    ........此处省略若干代码........
-
-    MASLayoutConstraint *existingConstraint = <span class="literal">nil</span>;
-    <span class="keyword">if</span> (<span class="keyword">self</span><span class="variable">.updateExisting</span>) {
-        existingConstraint = [<span class="keyword">self</span> layoutConstraintSimilarTo:layoutConstraint];
-    }
-    <span class="keyword">if</span> (existingConstraint) {
-        <span class="comment">// just update the constant</span>
-        existingConstraint<span class="variable">.constant</span> = layoutConstraint<span class="variable">.constant</span>;
-        <span class="keyword">self</span><span class="variable">.layoutConstraint</span> = existingConstraint;
-    } <span class="keyword">else</span> {
-        [<span class="keyword">self</span><span class="variable">.installedView</span> addConstraint:layoutConstraint];
-        <span class="keyword">self</span><span class="variable">.layoutConstraint</span> = layoutConstraint;
-        [firstLayoutItem<span class="variable">.mas_installedConstraints</span> addObject:<span class="keyword">self</span>];
-    }
-}
-
-- (MASLayoutConstraint *)layoutConstraintSimilarTo:(MASLayoutConstraint *)layoutConstraint {
-    <span class="comment">// check if any constraints are the same apart from the only mutable property constant</span>
-
-    <span class="comment">// go through constraints in reverse as we do not want to match auto-resizing or interface builder constraints</span>
-    <span class="comment">// and they are likely to be added first.</span>
-    <span class="keyword">for</span> (<span class="built_in">NSLayoutConstraint</span> *existingConstraint <span class="keyword">in</span> <span class="keyword">self</span><span class="variable">.installedView</span><span class="variable">.constraints</span><span class="variable">.reverseObjectEnumerator</span>) {
-        <span class="keyword">if</span> (![existingConstraint isKindOfClass:MASLayoutConstraint<span class="variable">.class</span>]) <span class="keyword">continue</span>;
-        <span class="keyword">if</span> (existingConstraint<span class="variable">.firstItem</span> != layoutConstraint<span class="variable">.firstItem</span>) <span class="keyword">continue</span>;
-        <span class="keyword">if</span> (existingConstraint<span class="variable">.secondItem</span> != layoutConstraint<span class="variable">.secondItem</span>) <span class="keyword">continue</span>;
-        <span class="keyword">if</span> (existingConstraint<span class="variable">.firstAttribute</span> != layoutConstraint<span class="variable">.firstAttribute</span>) <span class="keyword">continue</span>;
-        <span class="keyword">if</span> (existingConstraint<span class="variable">.secondAttribute</span> != layoutConstraint<span class="variable">.secondAttribute</span>) <span class="keyword">continue</span>;
-        <span class="keyword">if</span> (existingConstraint<span class="variable">.relation</span> != layoutConstraint<span class="variable">.relation</span>) <span class="keyword">continue</span>;
-        <span class="keyword">if</span> (existingConstraint<span class="variable">.multiplier</span> != layoutConstraint<span class="variable">.multiplier</span>) <span class="keyword">continue</span>;
-        <span class="keyword">if</span> (existingConstraint<span class="variable">.priority</span> != layoutConstraint<span class="variable">.priority</span>) <span class="keyword">continue</span>;
-
-        <span class="keyword">return</span> (<span class="keyword">id</span>)existingConstraint;
-    }
-    <span class="keyword">return</span> <span class="literal">nil</span>;
-}
-</code></pre><p>更新过程：给个标志updateExisting，YES为需要更新，需要更新的话，就先找有没有相似的约束存在。有相似的约束就更新约束的constant。没有相似约束就添加新的约束。那么问题来了，那如何定义相似？看上面代码。就是firsetItem,secondItem,firstAttribute,secondAttribute,releation,multiplier,priority都相等就定义为相似，则更新constant即可。平时使用时update没生效是个什么情况？很有可能的就是multiplier,priority变了，或者同样效果的约束用了不同方式。比如：width设置，初始设置有可能是.equalTo(otherView), 然后数据源变了，需要刷新值，我们就理所当然的.equalTo(@55), 这样什么问题？sencondItem不一样，不仅不是update，还叠加了一个width约束上去,导致冲突，然后就懵逼了，wtf…..</p>
-<p>2、命名问题。view.left, view.centerX, 最好不要用这个, 用view.mas_left, view.mas_centerX。 这种命名很容易冲突，经常会有一些库或者我们自己的代码，也给UIView加了category,用centerX,left,right什么的来取view的坐标。这种比较通用的命名尽量避免。</p>
-
+        
+          <a class="article-more-a" href="/2016/03/24/Masonry学习/#more">more >></a>
+        
       
 
       
@@ -870,118 +408,9 @@ var _hmt = _hmt || [];
     <div class="article-entry" itemprop="articleBody">
       
         <h2 id="Overview">Overview</h2><p>前段时间产品功能需求需要用到设备启动时间。找了几种方法，几番周折算是找到满足了需求的方法。此篇记录一下如何正确姿势获取设备启动时间。方法4是满足我需求的设备启动时间，可直接前往。</p>
-<h3 id="方法1">方法1</h3><p>很容易找到这个方法：<code>[NSProcessInfo processInfo].systemUptime</code>。</p>
-<p>官方文档：<em>The time interval since the computer was restarted. (read-only)</em>,<br>设备重新启动后的连续运行时间。乍一看很好，搞定。其实这个接口根本就不准。用了这个接口，你会发现即使你没有重新启动，设备启动时间却一直有在变化。短时间内似乎都是对的，但是设备启动个几天就有问题了。具体原因不详。</p>
-<h3 id="方法2">方法2</h3><pre><code><span class="preprocessor">#<span class="keyword">include</span> &lt;sys/types.h&gt;</span>
-<span class="preprocessor">#<span class="keyword">include</span> &lt;sys/sysctl.h&gt; </span>
-<span class="preprocessor">#<span class="keyword">define</span> MIB_SIZE 2  </span>
-
-<span class="keyword">int</span> mib[MIB_SIZE];
-<span class="keyword">size_t</span> size;
-<span class="keyword">struct</span> timeval  boottime;
-
-mib[<span class="number">0</span>] = CTL_KERN;
-mib[<span class="number">1</span>] = KERN_BOOTTIME;
-size = <span class="keyword">sizeof</span>(boottime);
-<span class="keyword">if</span> (sysctl(mib, MIB_SIZE, &amp;boottime, &amp;size, NULL, <span class="number">0</span>) != -<span class="number">1</span>)
-{
-    <span class="comment">// successful call</span>
-    NSDate* bootDate = [NSDate dateWithTimeIntervalSince1970:boottime.tv_sec];
-}
-</code></pre><p>上面代码来自<a href="http://stackoverflow.com/questions/10331020/get-the-boot-time-in-objective-c" target="_blank" rel="noopener">这里</a>。关键代码主要是sysctl，用来获取或设置内核状态的函数。sysctl及更多内核状态信息<a href="https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man8/sysctl.8.html" target="_blank" rel="noopener">戳这里</a>。上面代码就是直接读取内核状态中的设备启动时间。KERN_BOOTTIME点击进去头文件是这样描述的：/<em> struct: time kernel was booted </em>/。内核启动时间，这总靠谱了吧。经验证，这个时间是靠谱的。但是有个问题，如果改了设备时间，这个重启时间居然也跟着变…可见，这个参数的返回值是根据当前设备时间计算来的。一些需要准确判断重启时间的逻辑，显然在改变设备时间的状况下就有问题了。所以，不满足要求…</p>
-<h3 id="方法3">方法3</h3><pre><code><span class="preprocessor">#include <span class="title">&lt;arpa/inet.h&gt;</span></span>
-<span class="preprocessor">#include <span class="title">&lt;net/if.h&gt;</span></span>
-<span class="preprocessor">#include <span class="title">&lt;ifaddrs.h&gt;</span></span>
-<span class="preprocessor">#include <span class="title">&lt;net/if_dl.h&gt;</span></span>
-
-
-<span class="built_in">BOOL</span>   success;
-<span class="keyword">struct</span> ifaddrs *addrs;
-<span class="keyword">const</span> <span class="keyword">struct</span> ifaddrs *cursor;
-<span class="keyword">const</span> <span class="keyword">struct</span> if_data *networkStatisc;
-
-<span class="built_in">NSString</span> *name=[[<span class="built_in">NSString</span> alloc]init];
-
-<span class="keyword">struct</span> IF_DATA_TIMEVAL changeTime ;
-
-success = getifaddrs(&amp;addrs) == <span class="number">0</span>;
-<span class="keyword">if</span> (success)
-{
-    cursor = addrs;
-    <span class="keyword">while</span> (cursor != <span class="literal">NULL</span>)
-    {
-        name=[<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%s"</span>,cursor-&gt;ifa_name];
-        <span class="keyword">if</span> (cursor-&gt;ifa_addr-&gt;sa_family == AF_LINK)
-        {
-            <span class="keyword">if</span> ([name hasPrefix:<span class="string">@"en1"</span>])
-            {
-                networkStatisc = (<span class="keyword">const</span> <span class="keyword">struct</span> if_data *) cursor-&gt;ifa_data;
-                changeTime = networkStatisc-&gt;ifi_lastchange;
-                <span class="built_in">NSDate</span> *restartTime = [<span class="built_in">NSDate</span> dateWithTimeIntervalSince1970:changeTime<span class="variable">.tv_sec</span>];
-            }
-            <span class="keyword">if</span> ([name hasPrefix:<span class="string">@"pdp_ip1"</span>])
-            {
-                networkStatisc = (<span class="keyword">const</span> <span class="keyword">struct</span> if_data *) cursor-&gt;ifa_data;
-                changeTime = networkStatisc-&gt;ifi_lastchange;
-                <span class="built_in">NSDate</span> *restartTime = [<span class="built_in">NSDate</span> dateWithTimeIntervalSince1970:changeTime<span class="variable">.tv_sec</span>];
-            }
-        }
-        cursor = cursor-&gt;ifa_next;
-    }
-    freeifaddrs(addrs);
-}
-</code></pre><p>上面代码是获取网络接口流量改变时间。 en开头的是WiFi网口，pdp_ip开头的是移动流量网口。有用到的是en0,和pdp_ip0,其他都是没用的（其实是不知道它什么时候会用到…）。设备重启会重置网络接口的数据，ifi_lastchange就会更新为重启的时间。对于en1、pdp_ip1就只在设备重启的时候改变，就可以作为设备重启时间。可惜的是，存在与方法2同样的问题，所以，不满足需求…</p>
-<h3 id="方法4">方法4</h3><pre><code><span class="keyword">int</span> mib[<span class="number">4</span>] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, <span class="number">0</span>};
-size_t miblen = <span class="number">4</span>;
-
-size_t size;
-<span class="keyword">int</span> st = sysctl(mib, miblen, <span class="literal">NULL</span>, &amp;size, <span class="literal">NULL</span>, <span class="number">0</span>);
-
-<span class="keyword">struct</span> kinfo_proc * process = <span class="literal">NULL</span>;
-<span class="keyword">struct</span> kinfo_proc * newprocess = <span class="literal">NULL</span>;
-
-<span class="keyword">do</span> {
-    size += size / <span class="number">10</span>;
-    newprocess = realloc(process, size);
-
-    <span class="keyword">if</span> (!newprocess){
-       <span class="keyword">if</span> (process)
-        {
-            free(process);
-        }
-        <span class="keyword">return</span> <span class="literal">nil</span>;
-    }
-
-    process = newprocess;
-    st = sysctl(mib, miblen, process, &amp;size, <span class="literal">NULL</span>, <span class="number">0</span>);
-} <span class="keyword">while</span> (st == -<span class="number">1</span> &amp;&amp; errno == ENOMEM);
-
-<span class="keyword">if</span> (st == <span class="number">0</span>){
-    <span class="keyword">if</span> (size % <span class="keyword">sizeof</span>(<span class="keyword">struct</span> kinfo_proc) == <span class="number">0</span>){
-        <span class="keyword">int</span> nprocess = size / <span class="keyword">sizeof</span>(<span class="keyword">struct</span> kinfo_proc);
-        <span class="keyword">if</span> (nprocess)            {
-            <span class="built_in">NSMutableArray</span> * array = [[<span class="built_in">NSMutableArray</span> alloc] init];
-            <span class="keyword">for</span> (<span class="keyword">int</span> i = nprocess - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--)
-            {
-                <span class="built_in">NSString</span> * processID = [[<span class="built_in">NSString</span> alloc] initWithFormat:<span class="string">@"%d"</span>, process[i]<span class="variable">.kp_proc</span><span class="variable">.p_pid</span>];
-                <span class="built_in">NSString</span> * processName = [[<span class="built_in">NSString</span> alloc]initWithBytes:(<span class="keyword">const</span> <span class="keyword">void</span> *)process[i]<span class="variable">.kp_proc</span><span class="variable">.p_comm</span>
-                                                                 length:strlen(process[i]<span class="variable">.kp_proc</span><span class="variable">.p_comm</span>)
-                                                               encoding:<span class="built_in">NSUTF8StringEncoding</span>];
-
-               <span class="keyword">if</span> ([processName isEqualToString:<span class="string">@"kernel_task"</span>]) 
-                {
-                    <span class="built_in">NSTimeInterval</span> time = process[i]<span class="variable">.kp_proc</span><span class="variable">.p_un</span><span class="variable">.__p_starttime</span><span class="variable">.tv_sec</span>;
-                    ;
-                }
-            }
-
-            free(process);
-            <span class="keyword">return</span> array;
-        }
-    }
-}    
-</code></pre><p>上面代码做俩个事：1、获取正在运行进程列表。2、找到kernel_task进程，kernel_task进程的启动时间就可作为设备重启的时间。经测试，没有方法2、3的问题。满足要求。</p>
-
+        
+          <a class="article-more-a" href="/2015/07/25/iOS设备如何正确获取设备启动时间？/#more">more >></a>
+        
       
 
       
@@ -1203,7 +632,7 @@ size_t size;
 		toc_hide_index: true,
 		root: "/",
 		innerArchive: true,
-		showTags: false
+		showTags: true
 	}
 </script>
 
@@ -1226,25 +655,17 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
       
       
     
-      
-      
-      
-    
     
 
     <ul style="width: 70%">
     
     
       
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'innerArchive')"><a href="javascript:void(0)" q-class="active:innerArchive">所有文章</a></li>
+      <li style="width: 50%" q-on="click: openSlider(e, 'innerArchive')"><a href="javascript:void(0)" q-class="active:innerArchive">所有文章</a></li>
       
         
       
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'friends')"><a href="javascript:void(0)" q-class="active:friends">友链</a></li>
-      
-        
-      
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'aboutme')"><a href="javascript:void(0)" q-class="active:aboutme">关于我</a></li>
+      <li style="width: 50%" q-on="click: openSlider(e, 'aboutme')"><a href="javascript:void(0)" q-class="active:aboutme">关于我</a></li>
       
         
     </ul>
@@ -1265,10 +686,6 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">AFNetworking</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">masonry</a>
               </li>
              
@@ -1278,6 +695,10 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">iOS源码学习</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">AFNetworking</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1332,43 +753,11 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
     
 
     
-    	<section class="tools-section tools-section-friends" q-show="friends">
-  		
-        <ul class="search-ul">
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接1</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接2</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接3</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接4</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接5</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接6</a>
-            </li>
-          
-        </ul>
-  		
-    	</section>
-    
 
     
     	<section class="tools-section tools-section-me" q-show="aboutme">
   	  	
-  	  		<div class="aboutme-wrap" id="js-aboutme">苍狗又白云，我的身旁还是只有你，代码。</div>
+  	  		<div class="aboutme-wrap" id="js-aboutme">写写代码，拍拍照，减减肥。</div>
   	  	
     	</section>
     

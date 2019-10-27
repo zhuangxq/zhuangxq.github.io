@@ -8,21 +8,21 @@
   <link rel="dns-prefetch" href="https://github.com/zhuangxq/zhuangxq.github.io.git">
   <title>AFNetworking源码阅读笔记之二--AFURLRequestSerialization/AFURLResponseSerialization | Johngo Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。 AFHTTPRequestSerializerAFHTTPRequestSerializer是生成NSURLRequest核心类。它有两个子类AFJSONRequestSerializer、AFPropertyListRequestSerializer，分别对应不同的参数生成方式。生成request">
+  <meta name="description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="AFNetworking源码阅读笔记之二--AFURLRequestSerialization&#x2F;AFURLResponseSerialization">
 <meta property="og:url" content="https://github.com/zhuangxq/zhuangxq.github.io.git/2016/07/02/AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization/index.html">
 <meta property="og:site_name" content="Johngo Blog">
-<meta property="og:description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。 AFHTTPRequestSerializerAFHTTPRequestSerializer是生成NSURLRequest核心类。它有两个子类AFJSONRequestSerializer、AFPropertyListRequestSerializer，分别对应不同的参数生成方式。生成request">
+<meta property="og:description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="https://github.com/images/af_multipart_2.png">
 <meta property="og:image" content="https://github.com/images/af_multipart_3.png">
 <meta property="og:image" content="https://github.com/images/afnet_multipart.png">
 <meta property="og:image" content="https://github.com/images/af_response.png">
-<meta property="og:updated_time" content="2019-10-27T06:02:29.386Z">
+<meta property="og:updated_time" content="2019-10-27T08:25:05.492Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="AFNetworking源码阅读笔记之二--AFURLRequestSerialization&#x2F;AFURLResponseSerialization">
-<meta name="twitter:description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。 AFHTTPRequestSerializerAFHTTPRequestSerializer是生成NSURLRequest核心类。它有两个子类AFJSONRequestSerializer、AFPropertyListRequestSerializer，分别对应不同的参数生成方式。生成request">
+<meta name="twitter:description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。">
 <meta name="twitter:image" content="https://github.com/images/af_multipart_2.png">
   
     <link rel="alternative" href="/atom.xml" title="Johngo Blog" type="application/atom+xml">
@@ -84,10 +84,6 @@ var _hmt = _hmt || [];
     		
     			
     			<a q-on="click: openSlider(e, 'innerArchive')" href="javascript:void(0)">所有文章</a>
-    			
-            
-    			
-    			<a q-on="click: openSlider(e, 'friends')" href="javascript:void(0)">友链</a>
     			
             
     			
@@ -184,6 +180,7 @@ var _hmt = _hmt || [];
     <div class="article-entry" itemprop="articleBody">
       
         <p>继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。</p>
+<a id="more"></a>
 <h2 id="AFHTTPRequestSerializer">AFHTTPRequestSerializer</h2><p>AFHTTPRequestSerializer是生成NSURLRequest核心类。它有两个子类AFJSONRequestSerializer、AFPropertyListRequestSerializer，分别对应不同的参数生成方式。生成request方法：</p>
 <pre><code>- (<span class="type">NSMutableURLRequest</span> *)requestWithMethod:(<span class="type">NSString</span> *)<span class="keyword">method</span>
                                  <span class="type">URLString</span>:(<span class="type">NSString</span> *)<span class="type">URLString</span>
@@ -606,7 +603,7 @@ var _hmt = _hmt || [];
 		toc_hide_index: true,
 		root: "/",
 		innerArchive: true,
-		showTags: false
+		showTags: true
 	}
 </script>
 
@@ -629,25 +626,17 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
       
       
     
-      
-      
-      
-    
     
 
     <ul style="width: 70%">
     
     
       
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'innerArchive')"><a href="javascript:void(0)" q-class="active:innerArchive">所有文章</a></li>
+      <li style="width: 50%" q-on="click: openSlider(e, 'innerArchive')"><a href="javascript:void(0)" q-class="active:innerArchive">所有文章</a></li>
       
         
       
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'friends')"><a href="javascript:void(0)" q-class="active:friends">友链</a></li>
-      
-        
-      
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'aboutme')"><a href="javascript:void(0)" q-class="active:aboutme">关于我</a></li>
+      <li style="width: 50%" q-on="click: openSlider(e, 'aboutme')"><a href="javascript:void(0)" q-class="active:aboutme">关于我</a></li>
       
         
     </ul>
@@ -668,10 +657,6 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">AFNetworking</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">masonry</a>
               </li>
              
@@ -681,6 +666,10 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">iOS源码学习</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">AFNetworking</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -735,43 +724,11 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
     
 
     
-    	<section class="tools-section tools-section-friends" q-show="friends">
-  		
-        <ul class="search-ul">
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接1</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接2</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接3</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接4</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接5</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接6</a>
-            </li>
-          
-        </ul>
-  		
-    	</section>
-    
 
     
     	<section class="tools-section tools-section-me" q-show="aboutme">
   	  	
-  	  		<div class="aboutme-wrap" id="js-aboutme">苍狗又白云，我的身旁还是只有你，代码。</div>
+  	  		<div class="aboutme-wrap" id="js-aboutme">写写代码，拍拍照，减减肥。</div>
   	  	
     	</section>
     

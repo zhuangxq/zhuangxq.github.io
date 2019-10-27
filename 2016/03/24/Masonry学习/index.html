@@ -8,19 +8,19 @@
   <link rel="dns-prefetch" href="https://github.com/zhuangxq/zhuangxq.github.io.git">
   <title>Masonry源码学习 | Johngo Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="OverviewMasonry已经是离不开的开发库了，所有布局都用它，记录一下Masonary的源码学习。带着几个问题开始。  Masonry是如何工作的？ 链式调用的语法是如何实现的？ 使用注意项？  工作流程Masonry目录，红框内为主要类。 MASConstraints:核心类，可以表示NSLayoutConstraint的信息，可以是一个或一组约束。分别对应两个子类MASViewCons">
+  <meta name="description" content="OverviewMasonry已经是离不开的开发库了，所有布局都用它，记录一下Masonary的源码学习。带着几个问题开始。  Masonry是如何工作的？ 链式调用的语法是如何实现的？ 使用注意项？">
 <meta name="keywords" content="masonry,自动布局,iOS源码学习">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Masonry源码学习">
 <meta property="og:url" content="https://github.com/zhuangxq/zhuangxq.github.io.git/2016/03/24/Masonry学习/index.html">
 <meta property="og:site_name" content="Johngo Blog">
-<meta property="og:description" content="OverviewMasonry已经是离不开的开发库了，所有布局都用它，记录一下Masonary的源码学习。带着几个问题开始。  Masonry是如何工作的？ 链式调用的语法是如何实现的？ 使用注意项？  工作流程Masonry目录，红框内为主要类。 MASConstraints:核心类，可以表示NSLayoutConstraint的信息，可以是一个或一组约束。分别对应两个子类MASViewCons">
+<meta property="og:description" content="OverviewMasonry已经是离不开的开发库了，所有布局都用它，记录一下Masonary的源码学习。带着几个问题开始。  Masonry是如何工作的？ 链式调用的语法是如何实现的？ 使用注意项？">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="https://github.com/images/masonry_1.png">
-<meta property="og:updated_time" content="2019-10-27T06:04:46.263Z">
+<meta property="og:updated_time" content="2019-10-27T08:25:55.206Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Masonry源码学习">
-<meta name="twitter:description" content="OverviewMasonry已经是离不开的开发库了，所有布局都用它，记录一下Masonary的源码学习。带着几个问题开始。  Masonry是如何工作的？ 链式调用的语法是如何实现的？ 使用注意项？  工作流程Masonry目录，红框内为主要类。 MASConstraints:核心类，可以表示NSLayoutConstraint的信息，可以是一个或一组约束。分别对应两个子类MASViewCons">
+<meta name="twitter:description" content="OverviewMasonry已经是离不开的开发库了，所有布局都用它，记录一下Masonary的源码学习。带着几个问题开始。  Masonry是如何工作的？ 链式调用的语法是如何实现的？ 使用注意项？">
 <meta name="twitter:image" content="https://github.com/images/masonry_1.png">
   
     <link rel="alternative" href="/atom.xml" title="Johngo Blog" type="application/atom+xml">
@@ -82,10 +82,6 @@ var _hmt = _hmt || [];
     		
     			
     			<a q-on="click: openSlider(e, 'innerArchive')" href="javascript:void(0)">所有文章</a>
-    			
-            
-    			
-    			<a q-on="click: openSlider(e, 'friends')" href="javascript:void(0)">友链</a>
     			
             
     			
@@ -187,6 +183,7 @@ var _hmt = _hmt || [];
 <li>链式调用的语法是如何实现的？</li>
 <li>使用注意项？</li>
 </ul>
+<a id="more"></a>
 <h3 id="工作流程">工作流程</h3><p>Masonry目录，红框内为主要类。<br><img src="/images/masonry_1.png" alt></p>
 <p>MASConstraints:核心类，可以表示NSLayoutConstraint的信息，可以是一个或一组约束。分别对应两个子类MASViewConstraints，MASCompositeConstraint。链式调用的实现也来自这个类。下文分析。</p>
 <p>MASViewConstraints:MASConstraints子类，包含一个约束的相关信息，first/second MASViewAttribute, layoutRelation。提供安装、卸载约束的方法。下文“约束”都指MASViewConstraints。</p>
@@ -543,7 +540,7 @@ var _hmt = _hmt || [];
 		toc_hide_index: true,
 		root: "/",
 		innerArchive: true,
-		showTags: false
+		showTags: true
 	}
 </script>
 
@@ -566,25 +563,17 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
       
       
     
-      
-      
-      
-    
     
 
     <ul style="width: 70%">
     
     
       
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'innerArchive')"><a href="javascript:void(0)" q-class="active:innerArchive">所有文章</a></li>
+      <li style="width: 50%" q-on="click: openSlider(e, 'innerArchive')"><a href="javascript:void(0)" q-class="active:innerArchive">所有文章</a></li>
       
         
       
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'friends')"><a href="javascript:void(0)" q-class="active:friends">友链</a></li>
-      
-        
-      
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'aboutme')"><a href="javascript:void(0)" q-class="active:aboutme">关于我</a></li>
+      <li style="width: 50%" q-on="click: openSlider(e, 'aboutme')"><a href="javascript:void(0)" q-class="active:aboutme">关于我</a></li>
       
         
     </ul>
@@ -605,10 +594,6 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">AFNetworking</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">masonry</a>
               </li>
              
@@ -618,6 +603,10 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">iOS源码学习</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">AFNetworking</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -672,43 +661,11 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
     
 
     
-    	<section class="tools-section tools-section-friends" q-show="friends">
-  		
-        <ul class="search-ul">
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接1</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接2</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接3</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接4</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接5</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接6</a>
-            </li>
-          
-        </ul>
-  		
-    	</section>
-    
 
     
     	<section class="tools-section tools-section-me" q-show="aboutme">
   	  	
-  	  		<div class="aboutme-wrap" id="js-aboutme">苍狗又白云，我的身旁还是只有你，代码。</div>
+  	  		<div class="aboutme-wrap" id="js-aboutme">写写代码，拍拍照，减减肥。</div>
   	  	
     	</section>
     

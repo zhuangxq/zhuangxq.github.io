@@ -17,7 +17,7 @@
 <meta property="og:description" content="学习AFNetworking前，最好先了解下NSURLSession。本文先介绍一下AFNetworking如何工作，整体结构是怎样的。先看架构图：  AFURLSessionManager为核心类，类似于MVC中的controller，负责组织起整个工作流程，这里它要管的有AFHTTPRequestSerializer请求的生成，AFHTTPResponseSerializer响应处理的生成，N">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="https://github.com/images/AFSummary.png">
-<meta property="og:updated_time" content="2019-10-27T06:03:36.140Z">
+<meta property="og:updated_time" content="2019-10-27T08:25:22.873Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="AFNetworking源码阅读笔记之一">
 <meta name="twitter:description" content="学习AFNetworking前，最好先了解下NSURLSession。本文先介绍一下AFNetworking如何工作，整体结构是怎样的。先看架构图：  AFURLSessionManager为核心类，类似于MVC中的controller，负责组织起整个工作流程，这里它要管的有AFHTTPRequestSerializer请求的生成，AFHTTPResponseSerializer响应处理的生成，N">
@@ -82,10 +82,6 @@ var _hmt = _hmt || [];
     		
     			
     			<a q-on="click: openSlider(e, 'innerArchive')" href="javascript:void(0)">所有文章</a>
-    			
-            
-    			
-    			<a q-on="click: openSlider(e, 'friends')" href="javascript:void(0)">友链</a>
     			
             
     			
@@ -184,6 +180,7 @@ var _hmt = _hmt || [];
         <p>学习<a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a>前，最好先了解下<a href="http://objccn.io/issue-5-4/" target="_blank" rel="noopener">NSURLSession</a>。本文先介绍一下AFNetworking如何工作，整体结构是怎样的。先看架构图：</p>
 <p><img src="/images/AFSummary.png" alt></p>
 <p>AFURLSessionManager为核心类，类似于MVC中的controller，负责组织起整个工作流程，这里它要管的有AFHTTPRequestSerializer请求的生成，AFHTTPResponseSerializer响应处理的生成，NSURLSession的管理，请求task的各种各样回调处理，AFSecurityPolicy安全策略配置、缓存策略配置等。下面通过一个普通GET请求函数调用栈，了解下整套流程，分三部分：请求前、请求中、请求后。</p>
+<a id="more"></a>
 <p>请求前(in main queue)：</p>
 <pre><code>[AFHTTPSessionManager <span class="string">GET:</span><span class="string">parameters:</span><span class="string">progress:</span><span class="string">success:</span><span class="string">failure:</span>]
   [AFHTTPSessionManager <span class="string">dataTaskWithHTTPMethod:</span><span class="string">URLString:</span><span class="string">parameters:</span><span class="string">uploadProgress:</span><span class="string">downloadProgress:</span><span class="string">success:</span><span class="string">failure:</span>]
@@ -455,7 +452,7 @@ var _hmt = _hmt || [];
 		toc_hide_index: true,
 		root: "/",
 		innerArchive: true,
-		showTags: false
+		showTags: true
 	}
 </script>
 
@@ -478,25 +475,17 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
       
       
     
-      
-      
-      
-    
     
 
     <ul style="width: 70%">
     
     
       
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'innerArchive')"><a href="javascript:void(0)" q-class="active:innerArchive">所有文章</a></li>
+      <li style="width: 50%" q-on="click: openSlider(e, 'innerArchive')"><a href="javascript:void(0)" q-class="active:innerArchive">所有文章</a></li>
       
         
       
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'friends')"><a href="javascript:void(0)" q-class="active:friends">友链</a></li>
-      
-        
-      
-      <li style="width: 33.333333333333336%" q-on="click: openSlider(e, 'aboutme')"><a href="javascript:void(0)" q-class="active:aboutme">关于我</a></li>
+      <li style="width: 50%" q-on="click: openSlider(e, 'aboutme')"><a href="javascript:void(0)" q-class="active:aboutme">关于我</a></li>
       
         
     </ul>
@@ -517,10 +506,6 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">AFNetworking</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">masonry</a>
               </li>
              
@@ -530,6 +515,10 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">iOS源码学习</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">AFNetworking</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -584,43 +573,11 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
     
 
     
-    	<section class="tools-section tools-section-friends" q-show="friends">
-  		
-        <ul class="search-ul">
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接1</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接2</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接3</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接4</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接5</a>
-            </li>
-          
-            <li class="search-li">
-              <a href="http://localhost:4000/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>友情链接6</a>
-            </li>
-          
-        </ul>
-  		
-    	</section>
-    
 
     
     	<section class="tools-section tools-section-me" q-show="aboutme">
   	  	
-  	  		<div class="aboutme-wrap" id="js-aboutme">苍狗又白云，我的身旁还是只有你，代码。</div>
+  	  		<div class="aboutme-wrap" id="js-aboutme">写写代码，拍拍照，减减肥。</div>
   	  	
     	</section>
     
