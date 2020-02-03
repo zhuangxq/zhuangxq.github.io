@@ -6,24 +6,19 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="https://github.com/zhuangxq/zhuangxq.github.io.git">
-  <title>AFNetworking源码阅读笔记之二--AFURLRequestSerialization/AFURLResponseSerialization | Johngo Blog</title>
+  <title>川滇藏翻山越岭之旅 | Johngo Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。">
+  <meta name="description" content="最近几年，每年国庆都出去玩，去了几个地方都没有什么记录。今年突然想记录下，于是想起了几年前搭的blog，没写什么东西，草倒是长满了。顺便，也给blog垦垦荒。 对于从小生活在南方，山俊水秀又靠海，然而都是丘陵，总显得有点“小气”，打心底是有点向往西北的广袤壮阔。所以之前去了青海、新疆，今年国庆又走了四川、云南、西藏。漫漫长路，翻山越岭，让我们出发咯。 出发准备大概八月跟小伙伴定下来要走川藏线，成都">
 <meta property="og:type" content="article">
-<meta property="og:title" content="AFNetworking源码阅读笔记之二--AFURLRequestSerialization&#x2F;AFURLResponseSerialization">
-<meta property="og:url" content="https://github.com/zhuangxq/zhuangxq.github.io.git/2016/07/02/AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization/index.html">
+<meta property="og:title" content="川滇藏翻山越岭之旅">
+<meta property="og:url" content="https://github.com/zhuangxq/zhuangxq.github.io.git/2019/10/27/川滇藏翻山越岭之旅/index.html">
 <meta property="og:site_name" content="Johngo Blog">
-<meta property="og:description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。">
+<meta property="og:description" content="最近几年，每年国庆都出去玩，去了几个地方都没有什么记录。今年突然想记录下，于是想起了几年前搭的blog，没写什么东西，草倒是长满了。顺便，也给blog垦垦荒。 对于从小生活在南方，山俊水秀又靠海，然而都是丘陵，总显得有点“小气”，打心底是有点向往西北的广袤壮阔。所以之前去了青海、新疆，今年国庆又走了四川、云南、西藏。漫漫长路，翻山越岭，让我们出发咯。 出发准备大概八月跟小伙伴定下来要走川藏线，成都">
 <meta property="og:locale" content="default">
-<meta property="og:image" content="https://github.com/images/af_multipart_2.png">
-<meta property="og:image" content="https://github.com/images/af_multipart_3.png">
-<meta property="og:image" content="https://github.com/images/afnet_multipart.png">
-<meta property="og:image" content="https://github.com/images/af_response.png">
-<meta property="og:updated_time" content="2019-10-27T08:25:05.492Z">
+<meta property="og:updated_time" content="2020-02-03T09:37:34.534Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="AFNetworking源码阅读笔记之二--AFURLRequestSerialization&#x2F;AFURLResponseSerialization">
-<meta name="twitter:description" content="继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。">
-<meta name="twitter:image" content="https://github.com/images/af_multipart_2.png">
+<meta name="twitter:title" content="川滇藏翻山越岭之旅">
+<meta name="twitter:description" content="最近几年，每年国庆都出去玩，去了几个地方都没有什么记录。今年突然想记录下，于是想起了几年前搭的blog，没写什么东西，草倒是长满了。顺便，也给blog垦垦荒。 对于从小生活在南方，山俊水秀又靠海，然而都是丘陵，总显得有点“小气”，打心底是有点向往西北的广袤壮阔。所以之前去了青海、新疆，今年国庆又走了四川、云南、西藏。漫漫长路，翻山越岭，让我们出发咯。 出发准备大概八月跟小伙伴定下来要走川藏线，成都">
   
     <link rel="alternative" href="/atom.xml" title="Johngo Blog" type="application/atom+xml">
   
@@ -163,271 +158,31 @@ var _hmt = _hmt || [];
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-川滇藏翻山越岭之旅" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 class="article-title" itemprop="name">
-      AFNetworking源码阅读笔记之二--AFURLRequestSerialization/AFURLResponseSerialization
+      川滇藏翻山越岭之旅
     </h1>
   
 
         
-        <a href="/2016/07/02/AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization/" class="archive-article-date">
-  	<time datetime="2016-07-02T07:56:23.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2016-07-02</time>
+        <a href="/2019/10/27/川滇藏翻山越岭之旅/" class="archive-article-date">
+  	<time datetime="2019-10-27T09:10:40.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-10-27</time>
 </a>
         
       </header>
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>继续AFNetworking笔记。本篇主要关于NSURLRequest的生成，请求回来响应的处理。</p>
-<a id="more"></a>
-<h2 id="AFHTTPRequestSerializer">AFHTTPRequestSerializer</h2><p>AFHTTPRequestSerializer是生成NSURLRequest核心类。它有两个子类AFJSONRequestSerializer、AFPropertyListRequestSerializer，分别对应不同的参数生成方式。生成request方法：</p>
-<pre><code>- (<span class="type">NSMutableURLRequest</span> *)requestWithMethod:(<span class="type">NSString</span> *)<span class="keyword">method</span>
-                                 <span class="type">URLString</span>:(<span class="type">NSString</span> *)<span class="type">URLString</span>
-                                parameters:(id)parameters
-                                     error:(<span class="type">NSError</span> *__autoreleasing *)error
-{
-    <span class="type">NSParameterAssert</span>(<span class="keyword">method</span>);
-    <span class="type">NSParameterAssert</span>(<span class="type">URLString</span>);
-
-    <span class="type">NSURL</span> *url = [<span class="type">NSURL</span> <span class="type">URLWithString</span>:<span class="type">URLString</span>];
-
-    <span class="type">NSParameterAssert</span>(url);
-
-    <span class="type">NSMutableURLRequest</span> *mutableRequest = [[<span class="type">NSMutableURLRequest</span> alloc] initWithURL:url];
-    mutableRequest.<span class="type">HTTPMethod</span> = <span class="keyword">method</span>;
-
-    <span class="keyword">for</span> (<span class="type">NSString</span> *keyPath <span class="keyword">in</span> <span class="type">AFHTTPRequestSerializerObservedKeyPaths</span>()) { <span class="comment">#1</span>
-        <span class="keyword">if</span> ([self.mutableObservedChangedKeyPaths containsObject:keyPath]) {  <span class="comment">#1</span>
-            [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath]; <span class="comment">#1</span>
-        }
-    }
-
-    mutableRequest = [[self requestBySerializingRequest:mutableRequest withParameters:parameters error:error] mutableCopy];  <span class="comment">#2</span>
-
-    <span class="keyword">return</span> mutableRequest;
-}
-</code></pre><p>该方法创建一个新NSMutableRequest，#1部分是在设置一些请求配置，如allowsCellularAccess、cachePolicy、HTTPShouldHandleCookies等。这些配置的设置通过KVO观察，有设置值，则存到self.mutableObservedChangedKeyPaths，再把这些值通过KVC设置到NSMutableRequest。这个方式值得借鉴，简便明了。#2部分则是调用设置请求参数的方法，这是个AFURLRequestSerialization协议方法。接下来看下AFHTTPRequestSerializer对这个方法的实现（下面所有代码都会有略去一些非关键代码）：</p>
-<pre><code>- (<span class="built_in">NSURLRequest</span> *)requestBySerializingRequest:(<span class="built_in">NSURLRequest</span> *)request
-                               withParameters:(<span class="keyword">id</span>)parameters
-                                        error:(<span class="built_in">NSError</span> *__autoreleasing *)error
-{
-    <span class="built_in">NSMutableURLRequest</span> *mutableRequest = [request mutableCopy];
-
-    <span class="built_in">NSString</span> *query = <span class="literal">nil</span>;
-    <span class="keyword">if</span> (parameters) {
-        <span class="keyword">if</span> (<span class="keyword">self</span><span class="variable">.queryStringSerialization</span>) {  <span class="comment">//一个block，参数生成的方法外包出去了，给外部自行实现。</span>
-            <span class="built_in">NSError</span> *serializationError;
-            query = <span class="keyword">self</span><span class="variable">.queryStringSerialization</span>(request, parameters, &amp;serializationError);
-
-            <span class="keyword">if</span> (serializationError) {
-                <span class="keyword">if</span> (error) {
-                    *error = serializationError;
-                }
-
-                <span class="keyword">return</span> <span class="literal">nil</span>;
-            }
-        } <span class="keyword">else</span> {
-            <span class="keyword">switch</span> (<span class="keyword">self</span><span class="variable">.queryStringSerializationStyle</span>) {
-                <span class="keyword">case</span> AFHTTPRequestQueryStringDefaultStyle: <span class="comment">//默认参数生成方法,类似这样：ver=1.3.0&amp;idfa=<span class="doctag"><span class="keyword">xxx</span></span></span>
-                    query = AFQueryStringFromParameters(parameters);
-                    <span class="keyword">break</span>;
-            }
-        }
-    }
-
-    <span class="keyword">if</span> ([<span class="keyword">self</span><span class="variable">.HTTPMethodsEncodingParametersInURI</span> containsObject:[[request HTTPMethod] uppercaseString]]) {    <span class="comment">//如果请求方式是 GET,HEAD,DELETE, 则将参数接到URL后面</span>
-        <span class="keyword">if</span> (query &amp;&amp; query<span class="variable">.length</span> &gt; <span class="number">0</span>) {
-            mutableRequest<span class="variable">.URL</span> = [<span class="built_in">NSURL</span> URLWithString:[[mutableRequest<span class="variable">.URL</span> absoluteString] stringByAppendingFormat:mutableRequest<span class="variable">.URL</span><span class="variable">.query</span> ? <span class="string">@"&amp;%@"</span> : <span class="string">@"?%@"</span>, query]];
-        }
-    } <span class="keyword">else</span> {    <span class="comment">//POST方法</span>
-        <span class="comment">// #2864: an empty string is a valid x-www-form-urlencoded payload</span>
-        <span class="keyword">if</span> (!query) {
-            query = <span class="string">@""</span>;
-        }
-        <span class="keyword">if</span> (![mutableRequest valueForHTTPHeaderField:<span class="string">@"Content-Type"</span>]) {
-            [mutableRequest setValue:<span class="string">@"application/x-www-form-urlencoded"</span> forHTTPHeaderField:<span class="string">@"Content-Type"</span>];
-        }
-        [mutableRequest setHTTPBody:[query dataUsingEncoding:<span class="keyword">self</span><span class="variable">.stringEncoding</span>]];<span class="comment">//设置HTTPBody</span>
-    }
-
-    <span class="keyword">return</span> mutableRequest;
-}
-</code></pre><p>生成NSURLRequest大致如此，AFJSONRequestSerializer对应的参数生成方法：[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]， AFPropertyListRequestSerializer对应的参数生成方法：[NSPropertyListSerialization dataWithPropertyList:parameters format:self.format options:self.writeOptions error:error]。 如果参数有自己比较特殊结构，可以仿AFJSONRequestSerializer，实现协议方法，自定义生成方式。</p>
-<h3 id="分块数据上传">分块数据上传</h3><p>AFHTTPRequestSerializer这个类还有个比较重要的功能，就是实现分块数据上传的功能。分块上传是什么东西？我们知道HTTP分为三部分：状态行，请求头，请求体。主要数据一般放请求体，请求体却只有一个。那如何实现多块数据上传？答案很简单，就是多块数据按照一定格式拼成一块，并且多块数据间有分隔符，请求方需要告诉响应方当前请求是个分块数据和分割符长啥样。先看下如何用这个功能。</p>
-<pre><code>AFHTTPSessionManager *session = [AFHTTPSessionManager manager];
-[session <span class="string">POST:</span>@<span class="string">"https://api.app.net/stream/0/posts/stream/global"</span> <span class="string">parameters:</span>nil <span class="string">constructingBodyWithBlock:</span>^(id&lt;AFMultipartFormData&gt;  _Nonnull formData) {
-
-    NSData *data1 = [@<span class="string">"我是multipart data part111"</span> <span class="string">dataUsingEncoding:</span>NSUTF8StringEncoding];
-    NSData *data2 = [@<span class="string">"我是multipart data part222"</span> <span class="string">dataUsingEncoding:</span>NSUTF8StringEncoding];
-    NSData *data3 = [@<span class="string">"我是multipart data part333"</span> <span class="string">dataUsingEncoding:</span>NSUTF8StringEncoding];
-
-    [formData <span class="string">appendPartWithFormData:</span>data1 <span class="string">name:</span>@<span class="string">"11111"</span>];
-    [formData <span class="string">appendPartWithFormData:</span>data2 <span class="string">name:</span>@<span class="string">"22222"</span>];
-    [formData <span class="string">appendPartWithFormData:</span>data3 <span class="string">name:</span>@<span class="string">"33333"</span>];
-
-
-} <span class="string">progress:</span>^(NSProgress * _Nonnull uploadProgress) {
-
-} <span class="string">success:</span>^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-    NSLog(@<span class="string">"success:%@"</span>, responseObject);
-} <span class="string">failure:</span>^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-    NSLog(@<span class="string">"failed:%@"</span>, error);
-}];
-</code></pre><p>这个与正常的请求相比多了constructingBodyWithBlock，这个block就是用来添加分块数据。再看看这个请求，最终的HTTP请求长什么样。</p>
-<p><img src="/images/af_multipart_2.png" alt><br><img src="/images/af_multipart_3.png" alt></p>
-<p>看请求头的Content-Type:multipart/form-data; boundary=Boundary+7C0ABF26A3C30CEB。这是分块上传必须有的一个header，告诉响应方当前是分块数据，且分割线为Boundary+7C0ABF26A3C30CEB，响应方据此处理。由于分割线肯定不能跟数据块有一样的情况，所以分割线一般是一个随机复杂较长的值。接着看请求体，去掉分割线，就剩下三段数据，每段数据由Content-Disposition、空行、数据组成，<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html" target="_blank" rel="noopener">Content-Disposition</a>官方释义：The Content-Disposition response-header field has been proposed as a means for the origin server to suggest a default filename if the user requests that the content is saved to a file. 就是如果这块数据是要被保存成文件，那么Content-Disposition这个header就可以提供默认名。可以知道，其实分块数据请求其实就是POST请求，只不过在请求体数据做文章而已。下面的内容，都是围绕如何生成这个最终的请求体数据在做文章。</p>
-<p>看相关的几个类：</p>
-<p><img src="/images/afnet_multipart.png" alt></p>
-<p>AFStreamingMultipart总管分块数据的生成模块，AFMultipartBodyStream是一个数据流，AFHTTPBodyPart是具体的每个数据块的内容。AFMultipartFormData提供各种各样数据(string,data,file,stream…)的添加接口。下面看muiltipart请求如何生成(省略非关键代码):</p>
-<pre><code>- (<span class="type">NSMutableURLRequest</span> *)multipartFormRequestWithMethod:(<span class="type">NSString</span> *)<span class="keyword">method</span>
-                                              <span class="type">URLString</span>:(<span class="type">NSString</span> *)<span class="type">URLString</span>
-                                             parameters:(<span class="type">NSDictionary</span> *)parameters
-                              constructingBodyWithBlock:(<span class="type">void</span> (^)(id &lt;<span class="type">AFMultipartFormData</span>&gt; formData))<span class="keyword">block</span>
-                                                  error:(<span class="type">NSError</span> *__autoreleasing *)error
-{
-    <span class="type">NSMutableURLRequest</span> *mutableRequest = [self requestWithMethod:<span class="keyword">method</span> <span class="type">URLString</span>:<span class="type">URLString</span> parameters:<span class="keyword">nil</span> error:error];
-
-    __block <span class="type">AFStreamingMultipartFormData</span> *formData = [[<span class="type">AFStreamingMultipartFormData</span> alloc] initWithURLRequest:mutableRequest stringEncoding:<span class="type">NSUTF8StringEncoding</span>];
-
-    <span class="keyword">if</span> (parameters) {
-        ...parameters转成data当成一个数据块添加到formData...
-        [formData appendPartWithFormData:data name:[pair.field description]];
-    }
-
-    //添加数据块
-    <span class="keyword">if</span> (<span class="keyword">block</span>) {
-        <span class="keyword">block</span>(formData);
-    }
-
-    //将已添加的数据块拼装成最终形式，返回。
-    <span class="keyword">return</span> [formData requestByFinalizingMultipartFormData];
-}
-</code></pre><p>数据块如何添加，举个文件如何添加的例子：</p>
-<pre><code>- (<span class="built_in">BOOL</span>)appendPartWithFileURL:(<span class="built_in">NSURL</span> *)fileURL
-                         name:(<span class="built_in">NSString</span> *)name
-                     fileName:(<span class="built_in">NSString</span> *)fileName
-                     mimeType:(<span class="built_in">NSString</span> *)mimeType
-                        error:(<span class="built_in">NSError</span> * __autoreleasing *)error
-{
-
-    ...判断参数是否正确，file是否存在...
-
-    <span class="built_in">NSDictionary</span> *fileAttributes = [[<span class="built_in">NSFileManager</span> defaultManager] attributesOfItemAtPath:[fileURL path] error:error];
-    <span class="keyword">if</span> (!fileAttributes) {
-        <span class="keyword">return</span> <span class="literal">NO</span>;
-    }
-
-    <span class="comment">//设置这个数据块的header，Content-Dispositon和Content-Type。Content-Type指的是这块数据的类型。</span>
-    <span class="built_in">NSMutableDictionary</span> *mutableHeaders = [<span class="built_in">NSMutableDictionary</span> dictionary];
-    [mutableHeaders setValue:[<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"form-data; name=\"%@\"; filename=\"%@\""</span>, name, fileName] forKey:<span class="string">@"Content-Disposition"</span>];
-    [mutableHeaders setValue:mimeType forKey:<span class="string">@"Content-Type"</span>];
-
-    <span class="comment">//描述这个数据块的类，有header,boundary,stringEncoding,length等基本信息，body就是存数据的内容，类型为id，可以放各种各样数据，这里放文件URL。最终会通过流读出数据。</span>
-    AFHTTPBodyPart *bodyPart = [[AFHTTPBodyPart alloc] init];
-    bodyPart<span class="variable">.stringEncoding</span> = <span class="keyword">self</span><span class="variable">.stringEncoding</span>;
-    bodyPart<span class="variable">.headers</span> = mutableHeaders;
-    bodyPart<span class="variable">.boundary</span> = <span class="keyword">self</span><span class="variable">.boundary</span>;
-    bodyPart<span class="variable">.body</span> = fileURL;
-    bodyPart<span class="variable">.bodyContentLength</span> = [fileAttributes[<span class="built_in">NSFileSize</span>] unsignedLongLongValue];
-
-    <span class="comment">//单个数据块添加到整个数据块中</span>
-    [<span class="keyword">self</span><span class="variable">.bodyStream</span> appendHTTPBodyPart:bodyPart];
-
-    <span class="keyword">return</span> <span class="literal">YES</span>;
-}
-</code></pre><p>其他数据类型添加大同小异，不再赘述。</p>
-<p>数据块添加完，再看各个数据块如何拼装成最后的请求体。</p>
-<pre><code>- (NSMutableURLRequest *)requestByFinalizingMultipartFormData {
-
-    // Reset the initial and final boundaries <span class="keyword">to</span> ensure correct Content-Length
-    [<span class="literal">self</span>.bodyStream <span class="built_in">set</span>InitialAndFinalBoundaries];
-    [<span class="literal">self</span>.request <span class="built_in">set</span>HTTPBodyStream:<span class="literal">self</span>.bodyStream];
-
-    [<span class="literal">self</span>.request <span class="built_in">set</span>Value:[NSString stringWithFormat:@<span class="string">"multipart/form-data; boundary=%@"</span>, <span class="literal">self</span>.boundary] <span class="keyword">for</span>HTTPHeaderField:@<span class="string">"Content-Type"</span>];
-    [<span class="literal">self</span>.request <span class="built_in">set</span>Value:[NSString stringWithFormat:@<span class="string">"%llu"</span>, [<span class="literal">self</span>.bodyStream contentLength]] <span class="keyword">for</span>HTTPHeaderField:@<span class="string">"Content-Length"</span>];
-
-    return <span class="literal">self</span>.request;
-}
-</code></pre><p>这里主要关心[self.request setHTTPBodyStream:self.bodyStream]， 其他代码好懂。这个设置后，HTTPBody请被置空，这个流的完整数据将被作为请求体。这个流需要是还没打开的，request会接管这个流，请求时候会打开，不用我们调流的open。关于流可以补一下<a href="http://southpeak.github.io/blog/2014/07/17/ioszhong-liu-stream-de-shi-yong/" target="_blank" rel="noopener">这篇</a>，stackoverflow看到个比较一针见血的描述：The thing you need to understand about NSStreams, is “don’t call us, we’ll call you.” When the stream has data available, it will notify its delegate, and then you read whatever data is available and tell it to go get some more. 然而也有主动call you的情况，AFHTTPBodyPart就是这样干的。</p>
-<p>下面看流是如何读的，下面是AFMultipartBodyStream的代理方法：</p>
-<pre><code>- (<span class="built_in">NSInteger</span>)read:(uint8_t *)buffer
-        maxLength:(<span class="built_in">NSUInteger</span>)length
-{
-    <span class="built_in">NSInteger</span> totalNumberOfBytesRead = <span class="number">0</span>;
-    <span class="comment">//遍历每个AFHTTPBodyPart，有数据就读，没数据就跳到下一块</span>
-    <span class="keyword">while</span> ((<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead &lt; MIN(length, <span class="keyword">self</span><span class="variable">.numberOfBytesInPacket</span>)) {
-        <span class="keyword">if</span> (!<span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span> || ![<span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span> hasBytesAvailable]) {
-            <span class="keyword">if</span> (!(<span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span> = [<span class="keyword">self</span><span class="variable">.HTTPBodyPartEnumerator</span> nextObject])) {
-                <span class="keyword">break</span>;
-            }
-        } <span class="keyword">else</span> {
-            <span class="built_in">NSUInteger</span> maxLength = MIN(length, <span class="keyword">self</span><span class="variable">.numberOfBytesInPacket</span>) - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead;
-            <span class="comment">//读取当前bodyPart的流。</span>
-            <span class="built_in">NSInteger</span> numberOfBytesRead = [<span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span> read:&amp;buffer[totalNumberOfBytesRead] maxLength:maxLength];
-            <span class="keyword">if</span> (numberOfBytesRead == -<span class="number">1</span>) {
-                <span class="keyword">self</span><span class="variable">.streamError</span> = <span class="keyword">self</span><span class="variable">.currentHTTPBodyPart</span><span class="variable">.inputStream</span><span class="variable">.streamError</span>;
-                <span class="keyword">break</span>;
-            } <span class="keyword">else</span> {
-                totalNumberOfBytesRead += numberOfBytesRead;
-                <span class="comment">//每个数据块读完设延时，如果有的话，避免"request body stream exhausted"，默认无delay。</span>
-                <span class="keyword">if</span> (<span class="keyword">self</span><span class="variable">.delay</span> &gt; <span class="number">0.0</span>f) {
-                    [<span class="built_in">NSThread</span> sleepForTimeInterval:<span class="keyword">self</span><span class="variable">.delay</span>];
-                }
-            }
-        }
-    }
-    <span class="keyword">return</span> totalNumberOfBytesRead;
-}
-</code></pre><p>AFHTTPBodyPart的流读取方法：</p>
-<pre><code>- (<span class="built_in">NSInteger</span>)read:(uint8_t *)buffer
-        maxLength:(<span class="built_in">NSUInteger</span>)length
-{
-    <span class="built_in">NSInteger</span> totalNumberOfBytesRead = <span class="number">0</span>;
-    <span class="comment">//_phase表示当前处于数据块的哪块内容，边界线、header或者数据正文。。</span>
-    <span class="comment">//读取起始分割符或者中间的分割符</span>
-    <span class="keyword">if</span> (_phase == AFEncapsulationBoundaryPhase) {
-        <span class="built_in">NSData</span> *encapsulationBoundaryData = [([<span class="keyword">self</span> hasInitialBoundary] ? AFMultipartFormInitialBoundary(<span class="keyword">self</span><span class="variable">.boundary</span>) : AFMultipartFormEncapsulationBoundary(<span class="keyword">self</span><span class="variable">.boundary</span>)) dataUsingEncoding:<span class="keyword">self</span><span class="variable">.stringEncoding</span>];
-        <span class="comment">//将data读到buffer，并且跳转到下一个_phase</span>
-        totalNumberOfBytesRead += [<span class="keyword">self</span> readData:encapsulationBoundaryData intoBuffer:&amp;buffer[totalNumberOfBytesRead] maxLength:(length - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead)];
-    }
-    <span class="comment">//读取header数据</span>
-    <span class="keyword">if</span> (_phase == AFHeaderPhase) {
-        <span class="comment">//将data读到buffer，并且跳转到下一个_phase</span>
-        <span class="built_in">NSData</span> *headersData = [[<span class="keyword">self</span> stringForHeaders] dataUsingEncoding:<span class="keyword">self</span><span class="variable">.stringEncoding</span>];
-        totalNumberOfBytesRead += [<span class="keyword">self</span> readData:headersData intoBuffer:&amp;buffer[totalNumberOfBytesRead] maxLength:(length - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead)];
-    }
-    <span class="comment">//读取数据正文</span>
-    <span class="keyword">if</span> (_phase == AFBodyPhase) {
-        <span class="built_in">NSInteger</span> numberOfBytesRead = <span class="number">0</span>;
-        <span class="comment">//这个数据正文inputStream就是主动去read.</span>
-        numberOfBytesRead = [<span class="keyword">self</span><span class="variable">.inputStream</span> read:&amp;buffer[totalNumberOfBytesRead] maxLength:(length - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead)];
-        <span class="keyword">if</span> (numberOfBytesRead == -<span class="number">1</span>) {
-            <span class="keyword">return</span> -<span class="number">1</span>;
-        } <span class="keyword">else</span> {
-            totalNumberOfBytesRead += numberOfBytesRead;
-
-            <span class="keyword">if</span> ([<span class="keyword">self</span><span class="variable">.inputStream</span> streamStatus] &gt;= <span class="built_in">NSStreamStatusAtEnd</span>) {
-                [<span class="keyword">self</span> transitionToNextPhase];
-            }
-        }
-    }
-    <span class="comment">//判断是否是最后一个数据块，是的话加上分割符</span>
-    <span class="keyword">if</span> (_phase == AFFinalBoundaryPhase) {
-        <span class="built_in">NSData</span> *closingBoundaryData = ([<span class="keyword">self</span> hasFinalBoundary] ? [AFMultipartFormFinalBoundary(<span class="keyword">self</span><span class="variable">.boundary</span>) dataUsingEncoding:<span class="keyword">self</span><span class="variable">.stringEncoding</span>] : [<span class="built_in">NSData</span> data]);
-        totalNumberOfBytesRead += [<span class="keyword">self</span> readData:closingBoundaryData intoBuffer:&amp;buffer[totalNumberOfBytesRead] maxLength:(length - (<span class="built_in">NSUInteger</span>)totalNumberOfBytesRead)];
-    }
-
-    <span class="keyword">return</span> totalNumberOfBytesRead;
-}
-</code></pre><p>以上就是分块数据上传的内容。读完源码，发现然而从来没用过这个功能- -。避免知识用到方恨少时，看看也是值得的。</p>
-<h2 id="AFURLResponseSerialization">AFURLResponseSerialization</h2><p>请求的响应则单纯的多，比较简单，无非就是状态判断，MIME判断，不同类型数据的处理。</p>
-<p><img src="/images/af_response.png" alt></p>
-<p>基类AFHTTPResponseSerializer实现数据是否有效的校验，数据不做处理，原样返回data。几个子类则有对应的数据处理方法，值得一提的是JSON数据有帮我们做了一些空字段处理。</p>
+        <p>最近几年，每年国庆都出去玩，去了几个地方都没有什么记录。今年突然想记录下，于是想起了几年前搭的blog，没写什么东西，草倒是长满了。顺便，也给blog垦垦荒。</p>
+<p>对于从小生活在南方，山俊水秀又靠海，然而都是丘陵，总显得有点“小气”，打心底是有点向往西北的广袤壮阔。所以之前去了青海、新疆，今年国庆又走了四川、云南、西藏。漫漫长路，翻山越岭，让我们出发咯。</p>
+<h3 id="出发准备">出发准备</h3><p>大概八月跟小伙伴定下来要走川藏线，成都到拉萨，于是一个多月，陆陆续续做准备。去年我们在新疆，自驾了近三千公里，环北疆一大圈，翻过独库公路。所以这次毫无疑问，也是继续自驾。自驾的好处无需多言，自由，没有行程约束，甚至可以走哪算哪，当然也可以体验下驾驶的乐趣😆。租车对比多家，最终在淘宝订了一辆丰田普拉多，2.7L排量，10天13000人民币。主要是异地还车费贵，成都借拉萨还特别贵。毕竟大家都是进藏的路线。路线我们订了个大概行程，成都-&gt;稻城-&gt;德钦(梅里雪山)-&gt;G214-&gt;G318-&gt;拉萨，由于没确定在稻城要花多少时间，所以稻城后面每天到哪具体行程都没定，反正走到哪算哪都没问题。</p>
+<p>关于进高原的一些注意事项，高原缺氧</p>
+<p>未完待续<del>~</del>~</p>
 
       
 
@@ -507,7 +262,7 @@ var _hmt = _hmt || [];
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//pan.baidu.com/share/qrcode?url=https://github.com/zhuangxq/zhuangxq.github.io.git/2016/07/02/AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization/" alt="微信分享二维码">
+      <img src="//pan.baidu.com/share/qrcode?url=https://github.com/zhuangxq/zhuangxq.github.io.git/2019/10/27/川滇藏翻山越岭之旅/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -521,18 +276,18 @@ var _hmt = _hmt || [];
   
 <nav id="article-nav">
   
-    <a href="/2019/10/27/川滇藏翻山越岭之旅/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2020/02/03/自动引用计数/" id="article-nav-newer" class="article-nav-link-wrap">
       <i class="icon-circle-left"></i>
       <div class="article-nav-title">
         
-          川滇藏翻山越岭之旅
+          《Objective-C 高级编程》笔记一 自动引用计数
         
       </div>
     </a>
   
   
-    <a href="/2016/06/25/AFNetworking源码阅读笔记之一/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">AFNetworking源码阅读笔记之一</div>
+    <a href="/2016/07/02/AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">AFNetworking源码阅读笔记之二--AFURLRequestSerialization/AFURLResponseSerialization</div>
       <i class="icon-circle-right"></i>
     </a>
   
@@ -560,7 +315,7 @@ var _hmt = _hmt || [];
   
   <div class="duoshuo">
 	<!-- 多说评论框 start -->
-	<div class="ds-thread" data-thread-key="AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization" data-title="AFNetworking源码阅读笔记之二--AFURLRequestSerialization/AFURLResponseSerialization" data-url="https://github.com/zhuangxq/zhuangxq.github.io.git/2016/07/02/AFNetworking源码阅读之二-AFURLRequestSerialization-AFURLResponseSerialization/"></div>
+	<div class="ds-thread" data-thread-key="川滇藏翻山越岭之旅" data-title="川滇藏翻山越岭之旅" data-url="https://github.com/zhuangxq/zhuangxq.github.io.git/2019/10/27/川滇藏翻山越岭之旅/"></div>
 	<!-- 多说评论框 end -->
 	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
 	<script type="text/javascript">
